@@ -195,6 +195,73 @@ def enrich_ordin(it):
     return topics_from_detail(refine_with_diff(it))
 
 
+# ── 보강: 행정규칙(고시) — 제개정이유 · 이번 부칙 · 이전 판과 조문 비교 ─────────
+ADM_JO = re.compile(r"^\s*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?\s*(?:\(([^)]*)\))?\s*(.*)$", re.S)
+
+
+def _adm_articles(body):
+    """조문내용은 조마다 문자열 하나 ('제2조(정의) …'). 장·절 제목은 뺌 → [(번호 'JJJJGG', 제목, 내용)]"""
+    out = []
+    for s in api.as_list(body.get("조문내용")):
+        s = " ".join(_lines(s)) if not isinstance(s, str) else s
+        m = ADM_JO.match(s or "")
+        if m:
+            out.append((f"{int(m.group(1)):04d}{int(m.group(2) or 0):02d}", (m.group(3) or "").strip(), s))
+    return out
+
+
+def admrul_buchik(body, it):
+    b = body.get("부칙") or {}
+    days, nos, txt = (api.as_list(b.get(k)) for k in ("부칙공포일자", "부칙공포번호", "부칙내용"))
+    day, no = _ymd8(it["announced"]), str(it.get("no") or "")
+    idx = [i for i, d in enumerate(days) if str(d) == day and (not no or i >= len(nos) or str(nos[i]) == no)] \
+        or [i for i, d in enumerate(days) if str(d) == day]
+    if idx and idx[-1] < len(txt):
+        return " ".join(_lines(txt[idx[-1]]))
+    return " ".join(_lines(txt[-1])) if txt and it["change"] in ("제정", "폐지제정") else ""
+
+
+def _adm_prev(it):
+    rows, _ = api.search("admrul", nw=2, query=it["name"])
+    cur = _ymd8(it["announced"])
+    cand = [r for r in rows if r.get("행정규칙ID") == it["id"] and r.get("행정규칙일련번호") != it["seq"]
+            and (r.get("발령일자") or "") <= cur]
+    cand.sort(key=lambda r: (r.get("발령일자", ""), int(r.get("행정규칙일련번호") or 0)))
+    return cand[-1]["행정규칙일련번호"] if cand else None
+
+
+def enrich_admrul(it):
+    body = api.service("admrul", ID=it["seq"])
+    det = {"v": DETAIL_V}
+    reason = _lines((body.get("제개정이유") or {}).get("제개정이유내용"))
+    main, why, sec = [], [], None
+    for l in reason:
+        if "주요내용" in l:
+            sec = "main"; continue
+        if "개정이유" in l or "제정이유" in l:
+            sec = "why"; continue
+        (main if sec == "main" else why).append(l)
+    det["why"] = " ".join(why)[:3000]
+    det["main"] = [m[:1500] for m in main if len(m) > 4][:20]
+    bu = admrul_buchik(body, it)
+    if bu:
+        det["buchik"] = bu[:3000]
+    arts = _adm_articles(body)
+    det["n_articles"] = len(arts)
+    if it["change"] in ("제정", "폐지제정"):
+        det["titles"] = [t for _, t, _ in arts if t][:12]
+        det["purpose"] = next((textdiff.clean(x) for _, t, x in arts if t == "목적"), "")[:220]
+    elif it["change"] in ("일부개정", "전부개정") and arts:
+        prev = _adm_prev(it)
+        if prev:
+            old = _adm_articles(api.service("admrul", ID=prev))
+            if old:
+                det["prev"] = prev
+                det["diff"] = textdiff.compare(textdiff.article_map(old), textdiff.article_map(arts))
+    it["detail"] = det
+    return topics_from_detail(refine_with_diff(it))
+
+
 def watched_regions():
     return {r for p in config("profiles").get("profiles", []) for r in p.get("regions", [])}
 
@@ -202,6 +269,8 @@ def watched_regions():
 def needs_enrich(it, regions):
     if it["kind"] == "law":
         return (it.get("detail") or {}).get("v", 1) < DETAIL_V
+    if it["kind"] == "admrul":                                          # 고시만 (훈령·예규는 내부 규칙이라 뺌)
+        return it["type"] == "고시" and it["cls"]["level"] != "low" and (it.get("detail") or {}).get("v", 1) < DETAIL_V
     if it["kind"] == "ordin" and it.get("detail") is not None:          # 예전 형식(부칙 없음)이면 다시 읽음
         if it["detail"].get("v", 1) >= DETAIL_V:
             return False
@@ -214,7 +283,7 @@ def needs_enrich(it, regions):
 
 def _enrich(it):
     try:
-        (enrich_law if it["kind"] == "law" else enrich_ordin)(it)
+        {"law": enrich_law, "admrul": enrich_admrul, "ordin": enrich_ordin}[it["kind"]](it)
     except (RuntimeError, KeyError, ValueError) as e:
         log(f"  보강 실패 {it['name']}: {e}")
 

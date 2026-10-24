@@ -47,6 +47,20 @@ def run(a):
         if not walk(j):
             print(f"{key} 없음")
         return
+    if a[0] == "enrich":                                   # python -m lcf probe enrich admrul <일련번호> — 보강 결과 미리 보기
+        from . import collect, llm
+        from .classify import classify
+        kind, seq = a[1], a[2]
+        rows, _ = api.search(kind, query=a[3]) if len(a) > 3 else ([], 0)
+        r = next((x for x in rows if str(x.get({"admrul": "행정규칙일련번호", "law": "법령일련번호", "ordin": "자치법규일련번호"}[kind])) == seq), None)
+        it = classify({"admrul": collect.norm_admrul, "law": collect.norm_law, "ordin": collect.norm_ordin}[kind](r)) if r else \
+            {"kind": kind, "seq": seq, "id": None, "name": "", "type": "고시", "change": "일부개정", "announced": "", "no": "", "cls": {"topics": [], "level": "mid", "life": False}}
+        collect._enrich(it)
+        print(json.dumps({k: v for k, v in it.items() if k != "detail"}, ensure_ascii=False)[:600])
+        print(json.dumps(it.get("detail"), ensure_ascii=False, indent=1)[:5000])
+        print("----- 모델 입력")
+        print(llm.source_text(it)[:3000])
+        return
     mode, target, rest = a[0], a[1], _params(a[2:])
     if mode == "service":
         shape(api.service(target, **rest))
