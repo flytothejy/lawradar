@@ -13,16 +13,19 @@
 :root{
   --paper:#F7F8FA; --card:#FFFFFF; --ink:#1D2433; --muted:#626B7E; --rule:#DCE0E7;
   --ins:#2349C2; --ins-bg:#E7ECFB; --ins-deep:#1A3794; --del:#B4372E; --del-bg:#F9E9E7; --focus:#2349C2;
+  --ink2:#4A5265; --gray-bg:#EEF0F4; --loc:#155E59; --loc-bg:#E1F2EF;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --paper:#12151C; --card:#1A1E27; --ink:#E6E9EF; --muted:#9AA2B3; --rule:#2A303C;
     --ins:#9DB2FF; --ins-bg:#1D2648; --ins-deep:#C3D0FF; --del:#FF8F84; --del-bg:#3A1F1E; --focus:#9DB2FF;
+  --ink2:#B8BFCC; --gray-bg:#252B36; --loc:#7FD6CB; --loc-bg:#14302D;
   }
 }
 :root[data-theme="dark"]{
   --paper:#12151C; --card:#1A1E27; --ink:#E6E9EF; --muted:#9AA2B3; --rule:#2A303C;
   --ins:#9DB2FF; --ins-bg:#1D2648; --ins-deep:#C3D0FF; --del:#FF8F84; --del-bg:#3A1F1E; --focus:#9DB2FF;
+  --ink2:#B8BFCC; --gray-bg:#252B36; --loc:#7FD6CB; --loc-bg:#14302D;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.65 "IBM Plex Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
@@ -124,6 +127,87 @@ ol.list{list-style:none;margin:0;padding:0}
 .ans .kind{font-size:.8125rem;color:var(--muted)}
 .ans p{margin:.4rem 0}
 .ans ul{margin:.5rem 0 0;padding-left:1.1rem}
+/* 타임라인 v2 — 분야 칩 · 쉬운 종류 표시 · 같은 법 묶음 · 관심 표시 */
+.areas{display:flex;gap:.4rem;overflow-x:auto;padding:.9rem 0 .9rem;border-bottom:1px solid var(--rule);scrollbar-width:none}
+.areas a{flex:none;display:flex;align-items:center;min-height:40px;padding:0 .9rem;border-radius:999px;background:var(--card);border:1px solid var(--rule);color:var(--ink);font-size:.875rem;text-decoration:none;white-space:nowrap}
+.areas a[aria-current]{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
+.tl-fb{display:flex;flex-wrap:wrap;gap:.4rem .9rem;font-size:.8125rem;color:var(--muted);margin-top:.4rem}
+.tl-fb:empty{display:none}
+.tl-fb button{all:unset;cursor:pointer;color:var(--ins)}
+.fbm{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:.75rem 1rem;margin-top:.6rem;font-size:.875rem;display:flex;flex-direction:column;gap:.4rem}
+.fbm div{display:flex;justify-content:space-between;gap:1rem;align-items:center}
+.fbm button{font:inherit;font-size:.8125rem;border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:8px;padding:.3rem .6rem;cursor:pointer;white-space:nowrap}
+.bdg{display:inline-block;font-size:.6875rem;font-weight:600;line-height:1.4;border-radius:4px;padding:.12rem .4rem;white-space:nowrap}
+.b-law{color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.b-dec{color:var(--ins-deep);background:var(--ins-bg)}
+.b-adm{color:var(--ink2);background:var(--gray-bg)}
+.b-loc{color:var(--loc);background:var(--loc-bg)}
+.ev{display:grid;grid-template-columns:3.25rem minmax(0,1fr);gap:.75rem;padding:.9rem 0;border-bottom:1px solid var(--rule)}
+.ev .b{display:flex;flex-direction:column;align-items:flex-start;gap:.2rem;min-width:0}
+.ev .t{font-size:.9375rem;font-weight:500;line-height:1.5;color:var(--ink);text-decoration:none;word-break:keep-all}
+.ev .t:hover{text-decoration:underline;text-decoration-color:var(--ins)}
+.acts{display:flex;gap:.25rem;margin-top:.2rem;margin-left:-.5rem}
+.acts button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;color:var(--muted);padding:.4rem .5rem;border-radius:6px;min-height:28px}
+.acts button:hover{background:var(--gray-bg)}
+.acts svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
+.acts .fb-star.on{color:var(--ins)}.acts .fb-star.on svg{fill:currentColor}
+.tl h2.star{color:var(--ins)}
+.chain{display:flex;flex-direction:column;gap:.45rem;margin:.75rem 0;padding:.9rem 1rem;background:var(--card);border:1px solid var(--rule);border-radius:14px;color:var(--ink);text-decoration:none}
+.chain:hover{border-color:var(--ins)}
+.ch-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem}
+.bdgs{display:flex;flex-wrap:wrap;gap:.3rem}
+.dd{font-size:.75rem;font-weight:600;color:var(--del);white-space:nowrap}.dd.past{color:var(--muted)}
+.ch-t{font-size:1rem;font-weight:600;line-height:1.5;word-break:keep-all}
+.steps{list-style:none;margin:0;padding:0 0 0 .2rem;display:flex;flex-direction:column;gap:.15rem;font-size:.8125rem;color:var(--muted)}
+.steps li{display:flex;justify-content:space-between;gap:1rem;padding-left:.9rem;position:relative}
+.steps li::before{content:"";position:absolute;left:0;top:.55em;width:6px;height:6px;border-radius:50%;background:var(--rule)}
+.steps li.end{color:var(--del);font-weight:600}.steps li.end::before{background:var(--del)}
+.chain .m{font-size:.75rem;color:var(--muted)}
+section.area{margin-top:1.75rem}
+.ah{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;border-bottom:1px solid var(--ink);padding-bottom:.4rem}
+.ah h2{margin:0 !important;color:var(--ink) !important;font:700 1rem/1.4 "Noto Serif KR",serif !important}
+.ah span{font-size:.75rem;color:var(--muted)}
+a.more{display:inline-block;font-size:.875rem;padding:.75rem 0;text-decoration:none}
+.legend,.note2,.fbnote{font-size:.8125rem;color:var(--muted);margin:1.25rem 0 0;line-height:1.6}
+.fbnote{font-size:.75rem}
+.chv .ch-k{display:block;font-size:.8125rem;color:var(--muted);margin-top:1rem}
+.chv h1{margin:.4rem 0 .6rem}
+.pill{display:inline-block;font-size:.75rem;font-weight:600;color:var(--del);background:var(--del-bg);border-radius:999px;padding:.25rem .7rem}
+.pill.past{color:var(--muted);background:var(--gray-bg)}
+.chv .lede{margin:1rem 0 1.25rem}
+.rail{list-style:none;margin:0;padding:0}
+.rail li{display:grid;grid-template-columns:1.25rem minmax(0,1fr);gap:.75rem;position:relative;padding-bottom:1.1rem}
+.rail li:not(:last-child)::after{content:"";position:absolute;left:calc(.625rem - 1px);top:1.1rem;bottom:0;width:2px;background:var(--rule)}
+.rail .dot{width:12px;height:12px;border-radius:50%;margin:.35rem auto 0;background:var(--ink)}
+.rail .dot.b-dec{background:var(--ins)}.rail .dot.b-adm{background:var(--ink2)}.rail .dot.b-loc{background:var(--loc)}
+.rail li.end .dot{background:var(--card);box-shadow:inset 0 0 0 2px var(--del)}
+.rail a,.rail li>div{display:flex;flex-direction:column;gap:.3rem;color:var(--ink);text-decoration:none;min-width:0}
+.rail .r1{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.rail .r1 .m{font-size:.75rem;color:var(--muted)}
+.rail .r2{font-weight:600;font-size:.9375rem}
+.rail .r3{font-size:.875rem;color:var(--muted);line-height:1.6;word-break:keep-all}
+.rail .r4{font-size:.8125rem;color:var(--ins)}
+.later{display:flex;flex-direction:column;gap:.2rem;padding:.75rem .9rem;background:var(--gray-bg);border-radius:12px;color:var(--ink);text-decoration:none;font-size:.875rem;margin-top:.5rem}
+.later span{font-size:.75rem;color:var(--muted)}.later b{font-weight:500}
+h2.s2{font-size:.875rem;font-weight:600;margin:1.5rem 0 .5rem}
+.tags{display:flex;flex-wrap:wrap;gap:.4rem}
+dialog#fbd{border:0;border-radius:18px 18px 0 0;padding:1.25rem 1.25rem 1.5rem;width:min(34rem,100%);max-width:100%;margin:auto auto 0;background:var(--card);color:var(--ink);box-sizing:border-box}
+dialog#fbd::backdrop{background:rgba(10,14,22,.45)}
+@media (min-width:40rem){dialog#fbd{border-radius:18px;margin:auto}}
+#fbd h2{margin:0 0 .25rem;font:700 1.15rem/1.4 "Noto Serif KR",serif}
+#fb-what{margin:0 0 1rem;font-size:.875rem;color:var(--muted)}
+#fb-scopes{border:0;margin:0 0 1rem;padding:0;display:flex;flex-direction:column;gap:.5rem}
+#fb-scopes legend{font-size:.8125rem;color:var(--muted);margin-bottom:.4rem;padding:0}
+#fb-scopes label{display:flex;gap:.7rem;align-items:flex-start;padding:.75rem .9rem;border:1px solid var(--rule);border-radius:12px;cursor:pointer}
+#fb-scopes label:has(input:checked){border:1.5px solid var(--ins)}
+#fb-scopes input{accent-color:var(--ins);width:18px;height:18px;margin-top:.15rem;flex:none}
+#fb-scopes span{display:flex;flex-direction:column;gap:.1rem}#fb-scopes b{font-weight:600;font-size:.9375rem}#fb-scopes small{font-size:.8125rem;color:var(--muted)}
+.reasons{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem}
+.reasons button{font:inherit;font-size:.8125rem;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:999px;padding:.45rem .8rem;cursor:pointer;min-height:36px}
+.reasons button[aria-pressed=true]{border-color:var(--ins);background:var(--ins-bg);color:var(--ins-deep)}
+.fb-btns{display:flex;gap:.6rem}.fb-btns .cta{flex:1}
+.ghost{font:inherit;font-weight:600;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:14px;padding:0 1.25rem;min-height:52px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);display:flex;gap:1rem;align-items:center;background:var(--ink);color:var(--paper);border-radius:12px;padding:.75rem 1rem;font-size:.875rem;width:max-content;max-width:calc(100% - 2rem);box-sizing:border-box;z-index:10}
+.toast button{all:unset;cursor:pointer;font-weight:600;color:var(--paper);text-decoration:underline;white-space:nowrap}
 footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
 </style>
 </head>
@@ -190,7 +274,15 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
   <section id="v-timeline" class="tl" hidden>
     <div class="tl-head"><h1>내 타임라인</h1><a href="#/alerts">알림 받기</a></div>
     <p class="tl-sub"><span id="tl-sub"></span> · <a href="#/profile">조건 바꾸기</a></p>
+    <div class="tl-fb" id="tl-fb"></div>
+    <nav class="areas" id="tl-areas" aria-label="분야"></nav>
     <div id="tl-body"></div>
+  </section>
+
+  <!-- 3-1. 같은 법 묶음 펼침 -->
+  <section id="v-chain" class="chv" hidden>
+    <a class="back" href="#/timeline">← 내 타임라인</a>
+    <div id="ch-body"></div>
   </section>
 
   <!-- 4. 알림 받기 -->
@@ -243,6 +335,16 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
     <div id="ans" aria-live="polite"></div>
   </section>
 
+  <dialog id="fbd" aria-labelledby="fb-h">
+    <h2 id="fb-h">어디까지 덜 보여 드릴까요?</h2>
+    <p id="fb-what"></p>
+    <fieldset id="fb-scopes"></fieldset>
+    <p class="sec-k">이유를 알려 주시면 고르는 기준을 다듬을게요 (선택)</p>
+    <div class="reasons" id="fb-reasons"><button type="button">나와 상관없는 대상</button><button type="button">이미 알고 있음</button><button type="button">너무 사소함</button></div>
+    <div class="fb-btns"><button type="button" id="fb-cancel" class="ghost">취소</button><button type="button" id="fb-ok" class="cta">덜 보여 주기</button></div>
+  </dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+
   <footer>자료: 국가법령정보센터 공동활용 API. 자동으로 정리한 내용이라 빠지거나 틀릴 수 있어요. 중요한 결정 전에는 원문을 확인하세요.</footer>
 </main>
 <script src="match.js"></script>
@@ -262,14 +364,15 @@ const tlP = () => TL ? Promise.resolve(TL) : getJSON("api/timeline.json").then(d
 });
 
 // ── 화면 전환 ─────────────────────────────────────────────
-const VIEWS = ["main", "profile", "timeline", "alerts", "week", "ask"];
+const VIEWS = ["main", "profile", "timeline", "chain", "alerts", "week", "ask"];
 function route(){
   const [path, qs] = location.hash.replace(/^#\/?/, "").split("?");
   let v = VIEWS.includes(path) ? path : "main";
   if ((v === "timeline" || v === "alerts") && !LR.load()) v = "main";
+  if (v !== "timeline") TL_LIMIT = 30;
   VIEWS.forEach(x => $("#v-" + x).hidden = x !== v);
-  document.title = {main:"법레이더 — 내 일과 관련된 규칙이 바뀌면 먼저 알려 드려요", profile:"조건 확인 | 법레이더", timeline:"내 타임라인 | 법레이더", alerts:"알림 받기 | 법레이더", week:"이번 주 전국 변화 | 법레이더", ask:"바뀐 것 물어보기 | 법레이더"}[v];
-  ({main: showMain, profile: () => showProfile(new URLSearchParams(qs || "")), timeline: showTimeline, alerts: showAlerts, week: brief, ask: () => {}})[v]();
+  document.title = {main:"법레이더 — 내 일과 관련된 규칙이 바뀌면 먼저 알려 드려요", profile:"조건 확인 | 법레이더", timeline:"내 타임라인 | 법레이더", chain:"같은 법 묶음 | 법레이더", alerts:"알림 받기 | 법레이더", week:"이번 주 전국 변화 | 법레이더", ask:"바뀐 것 물어보기 | 법레이더"}[v];
+  ({main: showMain, profile: () => showProfile(new URLSearchParams(qs || "")), timeline: () => showTimeline(new URLSearchParams(qs || "")), chain: () => showChain(new URLSearchParams(qs || "")), alerts: showAlerts, week: brief, ask: () => {}})[v]();
   window.scrollTo(0, 0);
 }
 addEventListener("hashchange", route);
@@ -374,41 +477,209 @@ $("#pf-go").onclick = () => {
 function alertMsg(t){ const b = $("#pf-go"); const o = b.textContent; b.textContent = t; setTimeout(() => b.textContent = o, 2200); }
 
 // ── 3. 내 타임라인 ─────────────────────────────────────────
-let TL_LIMIT = 30;
-async function showTimeline(){
-  const p = LR.load(), body = $("#tl-body");
+// 분야별로 묶고(칩), 같은 법의 법률·시행령·시행규칙은 시행일이 같으면 한 카드로, 종류는 쉬운 말 표시로
+let TL_LIMIT = 30, TL_AREA = "";
+const STAR = `<svg width="15" height="15" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8l2.2 4.5 5 .7-3.6 3.5.9 4.9L10 14l-4.5 2.4.9-4.9-3.6-3.5 5-.7z"/></svg>`;
+const STEP = r => r.kind === "admrul" ? "고시" : r.kind === "ordin" ? r.type : r.type === "법률" ? "법률" : r.type === "대통령령" ? "시행령" : "시행규칙";
+const badge = r => { const k = LR.kind(r); return `<span class="bdg ${k.c}">${esc(k.t)}${r.change === "제정" ? " · 새로 생김" : ""}</span>`; };
+const hrefOf = r => r.page || r.url, extOf = r => r.page ? "" : ' target="_blank" rel="noopener"';
+
+function tlCompute(d, p, f){
+  const hits = [], weak = [];
+  for (const r of d.rows) {
+    if (LR.hidden(r, f) || f.star[r.key]) continue;
+    const m = LR.match(r, p); if (!m) continue;
+    (m.strong ? hits : weak).push({...r, m});
+  }
+  const starred = d.rows.filter(r => f.star[r.key]).map(r => ({...r, m: LR.match(r, p) || {why: ["관심 있음으로 표시"], area: null}}));
+  // 분야 순서: 프로필의 관심 분야 순 → 지켜보는 법령 → 관심 낱말 → 우리 동네
+  const order = [...(p.interests || []).filter(x => x.on).map(x => x.topic), "laws", "kw", "local"];
+  const areas = new Map();
+  for (const r of hits) { const a = r.m.area || {id: "etc", label: "그 밖"}; const o = areas.get(a.id) || {...a, n: 0, soon: 0}; o.n++; if (r.effective > TODAY) o.soon++; areas.set(a.id, o); }
+  const al = [...areas.values()].sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
+  return {hits, weak, starred, areas: al};
+}
+
+// 같은 식구(fam)·같은 시행일이면 한 묶음. 조례는 지역마다 달라 묶지 않음
+function chains(list){
+  const out = [], at = new Map();
+  for (const r of list) {
+    const k = r.kind !== "ordin" && r.effective ? `${LR.fam(r)}|${r.effective}` : null;
+    if (k && at.has(k)) { at.get(k).items.push(r); continue; }
+    const g = {items: [r]}; if (k) at.set(k, g); out.push(g);
+  }
+  return out;
+}
+const lead = items => items.find(r => r.title && r.type === "법률") || items.find(r => r.title) || items[0];
+
+function acts(r){
+  const on = LR.fb().star[r.key];
+  return `<div class="acts"><button type="button" class="fb-star${on ? " on" : ""}" data-k="${esc(r.key)}" aria-pressed="${on ? "true" : "false"}">${STAR}관심 있음</button>
+    <button type="button" class="fb-hide" data-k="${esc(r.key)}">관심 없음</button></div>`;
+}
+function ev(r, when, opt = {}){
+  const dd = LR.dday(r.effective, TODAY);
+  const date = when === "soon" ? `<div class="d">${md(r.effective)}${dd ? `<small>${dd}</small>` : ""}</div>` : `<div class="d past">${md(r.announced)}</div>`;
+  const meta = [r.title ? r.name : "", when === "soon" ? `${ymd(r.announced)} 공포` : (r.effective && r.effective !== r.announced ? `${ymd(r.effective)} 시행` : "")].filter(Boolean).join(" · ");
+  return `<div class="ev">${date}<div class="b">${badge(r)}
+    <a class="t" href="${esc(hrefOf(r))}"${extOf(r)}>${esc(r.title || r.name)}</a>
+    ${meta ? `<div class="m">${esc(meta)}</div>` : ""}${opt.why === false ? "" : `<div class="w">${esc(r.m.why.slice(0, 2).join(" · "))}</div>`}
+    ${opt.acts === false ? "" : acts(r)}</div></div>`;
+}
+function chainCard(g, when){
+  const items = [...g.items].sort((a, b) => a.announced.localeCompare(b.announced)), L = lead(items), e = L.effective;
+  const kinds = [...new Map(items.map(r => [LR.kind(r).t, r])).values()];
+  const dd = LR.dday(e, TODAY);
+  const area = (items.find(r => r.m && r.m.area) || {m: {}}).m.area;
+  return `<a class="chain" href="#/chain?k=${encodeURIComponent(items.map(r => r.key).join(","))}">
+    <div class="ch-top"><div class="bdgs">${kinds.map(badge).join("")}</div><span class="${when === "soon" ? "dd" : "dd past"}">${md(e)} 시행${dd ? ` · ${dd}` : ""}</span></div>
+    <span class="ch-t">${esc(L.title || L.name)}</span>
+    <ol class="steps">${items.map(r => `<li><span>${esc(STEP(r))} 공포</span><span>${ymd(r.announced)}</span></li>`).join("")}<li class="end"><span>시행</span><span>${ymd(e)}</span></li></ol>
+    <span class="m">${esc([LR.fam(L), `${items.length}건 묶음`, area && area.label].filter(Boolean).join(" · "))}</span></a>`;
+}
+const render = (list, when, opt) => chains(list).map(g => g.items.length > 1 ? chainCard(g, when) : ev(g.items[0], when, opt)).join("");
+
+async function showTimeline(qs){
+  const p = LR.load(), body = $("#tl-body"), f = LR.fb();
+  TL_AREA = (qs && qs.get("a")) || "";
   body.innerHTML = `<p class="empty">불러오는 중…</p>`;
   let d;
   try { d = await tlP(); } catch (e) { body.innerHTML = `<p class="empty">아직 자료를 불러올 수 없어요.</p>`; return; }
-  const hits = [];
-  for (const r of d.rows) { const m = LR.match(r, p); if (m) hits.push({...r, m}); }
+  const {hits, weak, starred, areas} = tlCompute(d, p, f);
   const since30 = new Date(Date.parse(TODAY) - 30 * 864e5).toISOString().slice(0, 10);
-  // 분명한 이유(지역·지켜보는 법령·낱말·분야 팩)가 있는 것이 본문, 분야만 겹치는 것은 아래 접어 둠
-  const weak = hits.filter(r => !r.m.strong).sort((a, b) => b.announced.localeCompare(a.announced));
-  const strong = hits.filter(r => r.m.strong);
-  const soon = strong.filter(r => r.effective > TODAY).sort((a, b) => a.effective.localeCompare(b.effective));
-  const recent = strong.filter(r => !(r.effective > TODAY)).sort((a, b) => b.announced.localeCompare(a.announced));
-  const n30 = strong.filter(r => r.announced >= since30).length;
+  const n30 = hits.filter(r => r.announced >= since30).length;
   $("#tl-sub").textContent = `지난 30일 변경 ${d.total30.toLocaleString()}건 중 ${p.who || "나"}께 해당하는 ${n30}건`;
-  const ev = (r, when) => {
-    const href = r.page || r.url, ext = !r.page;
-    const dd = LR.dday(r.effective, TODAY);
-    const date = when === "soon" ? `<div class="d">${md(r.effective)}${dd ? `<small>${dd}</small>` : ""}</div>` : `<div class="d past">${md(r.announced)}</div>`;
-    const meta = [r.title ? r.name : (r.kind === "ordin" ? r.org : r.type), r.change === "제정" ? "새로 생김" : r.change,
-      when === "soon" ? `${ymd(r.announced)} 공포` : (r.effective && r.effective !== r.announced ? `${ymd(r.effective)} 시행` : "")].filter(Boolean).join(" · ");
-    return `<a class="ev" href="${esc(href)}"${ext ? ' target="_blank" rel="noopener"' : ""}>${date}<div>
-      <div class="t">${esc(r.title || r.name)}</div>
-      <div class="m">${esc(meta)}</div><div class="w">${esc(r.m.why.slice(0, 2).join(" · "))}</div></div></a>`;
-  };
-  const soonList = soon.slice(0, 12);
-  body.innerHTML =
-    (soonList.length ? `<h2 class="soon">곧 시행</h2>${soonList.map(r => ev(r, "soon")).join("")}` : "") +
-    `<h2>최근 바뀜</h2>` + (recent.slice(0, TL_LIMIT).map(r => ev(r, "recent")).join("") || `<p class="empty">최근 90일 동안 조건에 맞는 변경이 없어요. 조건을 넓혀 보세요.</p>`) +
-    (recent.length > TL_LIMIT ? `<button class="morebtn" id="tl-more">더 보기 (${recent.length - TL_LIMIT}건)</button>` : "") +
-    (weak.length ? `<details class="weak"><summary>분야만 겹치는 변경 ${weak.length}건</summary>${weak.slice(0, 40).map(r => ev(r, r.effective > TODAY ? "soon" : "recent")).join("")}</details>` : "") +
-    `<h2>의견 받는 중</h2><p class="empty" style="padding-top:.25rem">입법예고를 연결하면 시행 전에 의견을 낼 수 있는 개정안이 여기 나와요. (준비 중)</p>
-    <div class="scope"><b>법레이더가 보는 범위</b><span>법령·행정규칙·자치법규(조례)만 봐요. 입법예고·판례·해석례는 아직이에요. 국가법령정보센터 등록이 늦으면 며칠 뒤에 뜨기도 해요. 여기 없다고 안 바뀐 것은 아니에요.</span></div>`;
-  const mb = $("#tl-more"); if (mb) mb.onclick = () => { TL_LIMIT += 30; showTimeline(); };
+  const nHide = Object.keys(f.hide).length + Object.keys(f.hideFam).length;
+  $("#tl-fb").innerHTML = (starred.length || nHide) ? `${starred.length ? `<span>관심 있음 ${starred.length}</span>` : ""}${nHide ? `<button type="button" id="fb-manage">숨김 ${nHide} · 관리</button>` : ""}` : "";
+  $("#tl-areas").innerHTML = [`<a href="#/timeline"${TL_AREA ? "" : ' aria-current="true"'}>전체 ${hits.length}</a>`,
+    ...areas.map(a => `<a href="#/timeline?a=${encodeURIComponent(a.id)}"${TL_AREA === a.id ? ' aria-current="true"' : ""}>${esc(a.label)} ${a.n}</a>`)].join("");
+  const soonOf = l => l.filter(r => r.effective > TODAY).sort((a, b) => a.effective.localeCompare(b.effective));
+  const pastOf = l => l.filter(r => !(r.effective > TODAY)).sort((a, b) => b.announced.localeCompare(a.announced));
+  const tail = `<p class="legend">표시 뜻: <a href="guide.html">국회가 바꾼 법 · 정부 세부 기준 · 부처 고시 · 우리 동네 조례</a></p>
+    <div class="scope"><b>법레이더가 보는 범위</b><span>법령·행정규칙·자치법규(조례)만 봐요. 입법예고·판례·해석례는 아직이에요. 국가법령정보센터 등록이 늦으면 며칠 뒤에 뜨기도 해요. 여기 없다고 안 바뀐 것은 아니에요.</span></div>
+    <p class="fbnote">관심 표시는 이 기기에 저장되고, 어떤 변화가 쓸모 있었는지 익명으로만 집계해 고르는 기준을 다듬어요.</p>`;
+  let html = "";
+  if (TL_AREA) {                                          // 분야 하나만
+    const a = areas.find(x => x.id === TL_AREA), list = hits.filter(r => (r.m.area || {}).id === TL_AREA);
+    const soon = soonOf(list), past = pastOf(list);
+    $("#tl-sub").textContent = `${a ? a.label : "이 분야"} ${list.length}건 (최근 90일 · 곧 시행 포함)`;
+    html = (soon.length ? `<h2 class="soon">곧 시행 · ${soon.length}</h2>${render(soon, "soon")}` : "") +
+      `<h2>최근 바뀜 · ${past.length}</h2>` + (render(past.slice(0, TL_LIMIT), "recent") || `<p class="empty">이 분야는 최근 바뀐 것이 없어요.</p>`) +
+      (past.length > TL_LIMIT ? `<button class="morebtn" id="tl-more">더 보기 (${past.length - TL_LIMIT}건)</button>` : "") +
+      (TL_AREA === "local" && p.sido && p.region !== p.sido ? `<p class="note2">${esc(p.sido)} 조례는 내 분야·관심 낱말과 겹치는 것만 보여요.</p>` : "");
+  } else {
+    const soon = soonOf(hits).slice(0, 12);
+    html = (starred.length ? `<h2 class="star">관심 있음으로 표시한 변화</h2>${starred.map(r => ev(r, r.effective > TODAY ? "soon" : "recent")).join("")}` : "") +
+      (soon.length ? `<h2 class="soon">곧 시행 · ${soon.length}</h2>${render(soon, "soon")}` : "");
+    const past = pastOf(hits);
+    for (const a of areas) {
+      const l = past.filter(r => (r.m.area || {}).id === a.id);
+      if (!l.length) continue;
+      const g = chains(l), shown = g.slice(0, 3), more = g.slice(3).reduce((n, x) => n + x.items.length, 0);
+      html += `<section class="area"><div class="ah"><h2>${esc(a.label)}</h2><span>${l.length}건${a.soon ? ` · 곧 시행 ${a.soon} 따로` : ""}</span></div>
+        ${shown.map(x => x.items.length > 1 ? chainCard(x, "recent") : ev(x.items[0], "recent", {why: false})).join("")}
+        ${more ? `<a class="more" href="#/timeline?a=${encodeURIComponent(a.id)}">${more}건 더 보기</a>` : ""}</section>`;
+    }
+    if (!hits.length) html += `<p class="empty">최근 90일 동안 조건에 맞는 변경이 없어요. <a href="#/profile">조건을 넓혀 보세요.</a></p>`;
+    if (weak.length) html += `<details class="weak"><summary>분야만 겹치는 변경 ${weak.length}건</summary>${weak.sort((a, b) => b.announced.localeCompare(a.announced)).slice(0, 40).map(r => ev(r, r.effective > TODAY ? "soon" : "recent")).join("")}</details>`;
+    html += `<h2>의견 받는 중</h2><p class="empty" style="padding-top:.25rem">입법예고를 연결하면 시행 전에 의견을 낼 수 있는 개정안이 여기 나와요. (준비 중)</p>`;
+  }
+  body.innerHTML = html + tail;
+  const mb = $("#tl-more"); if (mb) mb.onclick = () => { TL_LIMIT += 30; showTimeline(qs); };
+  const mg = $("#fb-manage"); if (mg) mg.onclick = () => fbManage(d);
+}
+
+// ── 같은 법 묶음 펼침 ──────────────────────────────────────
+async function showChain(qs){
+  const box = $("#ch-body"), p = LR.load();
+  let d;
+  try { d = await tlP(); } catch (e) { box.innerHTML = `<p class="empty">아직 자료를 불러올 수 없어요.</p>`; return; }
+  const keys = (qs.get("k") || "").split(","), by = new Map(d.rows.map(r => [r.key, r]));
+  const items = keys.map(k => by.get(k)).filter(Boolean).sort((a, b) => a.announced.localeCompare(b.announced));
+  if (!items.length) { box.innerHTML = `<p class="empty">묶음을 찾을 수 없어요.</p>`; return; }
+  const L = lead(items), e = L.effective, dd = LR.dday(e, TODAY), fam = LR.fam(L);
+  const who = items.some(r => r.type === "법률") && items.some(r => r.type !== "법률")
+    ? `국회가 법률로 큰 틀을 바꾸고, 정부가 ${items.some(r => r.type === "대통령령") ? "시행령" : "시행규칙"}으로 세부를 채웠어요. 모두 ${ymd(e)}부터 적용돼요.`
+    : `같은 법의 변경 ${items.length}건이 ${ymd(e)}부터 함께 적용돼요.`;
+  const later = d.rows.filter(r => LR.fam(r) === fam && r.effective > e && !keys.includes(r.key)).sort((a, b) => a.effective.localeCompare(b.effective))[0];
+  const m = p && (items.map(r => LR.match(r, p)).find(Boolean));
+  document.title = `${L.title || L.name} | 법레이더`;
+  box.innerHTML = `<span class="ch-k">${esc(fam)} · ${items.length}건 묶음</span>
+    <h1 class="sm">${esc(L.title || L.name)}</h1>
+    <span class="pill${e > TODAY ? "" : " past"}">${ymd(e)} 시행${dd ? ` · ${dd}` : ""}</span>
+    <p class="lede">${esc(who)}</p>
+    <ol class="rail">${items.map(r => `<li><span class="dot ${LR.kind(r).c}"></span><a href="${esc(hrefOf(r))}"${extOf(r)}>
+      <span class="r1">${badge(r)}<span class="m">${ymd(r.announced)} 공포</span></span>
+      <span class="r2">${esc(r.name)}</span>${r.line ? `<span class="r3">${esc(r.line)}</span>` : ""}<span class="r4">상세 보기 →</span></a></li>`).join("")}
+      <li class="end"><span class="dot"></span><div><span class="r1 dd">시행${dd ? ` · ${dd}` : ""}</span><span class="r2">${ymd(e)}부터 적용</span></div></li></ol>
+    ${later ? `<a class="later" href="${esc(hrefOf(later))}"${extOf(later)}><span>같은 법이 이후 또 바뀌었어요</span><b>${esc(later.name)} ${ymd(later.announced)} 개정 · ${ymd(later.effective)} 시행 →</b></a>` : ""}
+    ${m ? `<h2 class="s2">내 타임라인에 보이는 이유</h2><div class="tags">${m.why.map(w => `<span class="tag">${esc(w)}</span>`).join("")}</div>` : ""}
+    <p class="legend">같은 법의 법률·시행령·시행규칙 변경을 시행일 기준으로 한 묶음으로 보여 드려요. <a href="guide.html">표시 뜻</a></p>`;
+}
+
+// ── 관심 표시 ─────────────────────────────────────────────
+function fbSend(o){ cfg.then(() => { if (API) fetch(API + "/feedback", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify(o)}).catch(() => {}); }); }
+let TOAST_T;
+function toast(msg, undo){
+  const t = $("#toast");
+  t.innerHTML = `<span>${esc(msg)}</span>${undo ? `<button type="button">되돌리기</button>` : ""}`;
+  t.hidden = false;
+  if (undo) t.querySelector("button").onclick = () => { undo(); t.hidden = true; route(); };
+  clearTimeout(TOAST_T); TOAST_T = setTimeout(() => { t.hidden = true; }, 7000);
+}
+let FB_ROW = null;
+document.addEventListener("click", async e => {
+  const s = e.target.closest(".fb-star"), h = e.target.closest(".fb-hide");
+  if (!s && !h) return;
+  const d = await tlP(), r = d.rows.find(x => x.key === (s || h).dataset.k); if (!r) return;
+  if (s) {
+    const f = LR.fb(), on = !f.star[r.key];
+    if (on) f.star[r.key] = Date.now(); else delete f.star[r.key];
+    LR.fbSave(f); fbSend({key: r.key, act: on ? "star" : "unstar"});
+    if (on) toast("관심 있음으로 표시했어요. 타임라인 맨 위에 보여요.");
+    return route();
+  }
+  FB_ROW = r;
+  const p = LR.load(), m = LR.match(r, p) || {};
+  const fam = LR.fam(r), isLaw = r.kind === "law";
+  $("#fb-what").textContent = `${r.title || r.name}${r.title ? " · " + r.name : ""}`;
+  $("#fb-scopes").innerHTML = `<legend>숨길 범위</legend>
+    <label><input type="radio" name="scope" value="item"><span><b>이 변화만 숨기기</b><small>같은 ${isLaw ? "법령" : "규정"}이 또 바뀌면 다시 보여요</small></span></label>
+    <label><input type="radio" name="scope" value="law" checked><span><b>이 ${isLaw ? "법령" : "규정"}은 앞으로 안 보기</b><small>「${esc(fam)}」${isLaw ? "과 시행령·시행규칙" : ""}</small></span></label>
+    ${m.kw ? `<label><input type="radio" name="scope" value="keyword" data-kw="${esc(m.kw)}"><span><b>‘관심 낱말: ${esc(m.kw)}’ 빼기</b><small>이 낱말 때문에 걸린 변화가 모두 빠져요</small></span></label>` : ""}`;
+  document.querySelectorAll("#fb-reasons button").forEach(b => b.setAttribute("aria-pressed", "false"));
+  $("#fbd").showModal();
+});
+document.querySelectorAll("#fb-reasons button").forEach(b => b.onclick = () => {
+  const on = b.getAttribute("aria-pressed") !== "true";
+  document.querySelectorAll("#fb-reasons button").forEach(x => x.setAttribute("aria-pressed", "false"));
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+});
+$("#fb-cancel").onclick = () => $("#fbd").close();
+$("#fb-ok").onclick = () => {
+  const r = FB_ROW, sc = document.querySelector("#fb-scopes input:checked"), scope = sc ? sc.value : "item";
+  const reason = (document.querySelector("#fb-reasons button[aria-pressed=true]") || {}).textContent || "";
+  const f = LR.fb(), fam = LR.fam(r);
+  let msg, undo;
+  if (scope === "item") { f.hide[r.key] = 1; msg = "이 변화는 숨겼어요"; undo = () => { const g = LR.fb(); delete g.hide[r.key]; LR.fbSave(g); fbSend({key: r.key, act: "unhide"}); }; }
+  if (scope === "law") { f.hideFam[fam] = 1; msg = `「${fam}」 변화는 앞으로 안 보여요`; undo = () => { const g = LR.fb(); delete g.hideFam[fam]; LR.fbSave(g); fbSend({key: r.key, act: "unhide"}); }; }
+  if (scope === "keyword") {
+    const kw = sc.dataset.kw, p = LR.load();
+    p.keywords = (p.keywords || []).filter(k => k !== kw); LR.save(p);
+    f.dropKw = [...new Set([...(f.dropKw || []), kw])];
+    msg = `관심 낱말 ‘${kw}’를 뺐어요`;
+    undo = () => { const q = LR.load(); q.keywords = [...new Set([...(q.keywords || []), kw])]; LR.save(q); const g = LR.fb(); g.dropKw = (g.dropKw || []).filter(k => k !== kw); LR.fbSave(g); fbSend({key: r.key, act: "unhide"}); };
+  }
+  LR.fbSave(f); fbSend({key: r.key, act: "hide", scope, reason});
+  $("#fbd").close(); route(); toast(msg, undo);
+};
+function fbManage(d){
+  const f = LR.fb(), by = new Map(d.rows.map(r => [r.key, r]));
+  const rows = [...Object.keys(f.hideFam).map(x => ({t: `「${x}」 전체`, undo: () => { delete f.hideFam[x]; }})),
+    ...Object.keys(f.hide).map(k => ({t: (by.get(k) || {}).title || (by.get(k) || {}).name || k, undo: () => { delete f.hide[k]; }}))];
+  $("#tl-fb").insertAdjacentHTML("afterend", `<div class="fbm" id="fbm"><b>숨긴 것</b>${rows.map((x, i) => `<div><span>${esc(x.t)}</span><button type="button" data-i="${i}">다시 보기</button></div>`).join("")}</div>`);
+  $("#fb-manage").remove();
+  document.querySelectorAll("#fbm button").forEach(b => b.onclick = () => { rows[+b.dataset.i].undo(); LR.fbSave(f); route(); });
 }
 
 // ── 4. 알림 받기 ───────────────────────────────────────────
@@ -432,7 +703,7 @@ $("#alf").addEventListener("submit", async e => {
   btn.disabled = true;
   try {
     const prefs = {daily: f.has("daily"), weekly: f.has("weekly"), before: f.has("before")};
-    const r = await fetch(API + "/subscribe", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({email: $("#al-email").value, prefs, profile: LR.load()})});
+    const r = await fetch(API + "/subscribe", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({email: $("#al-email").value, prefs, profile: {...LR.load(), fb: (f => ({star: Object.keys(f.star), hide: Object.keys(f.hide), hideFam: Object.keys(f.hideFam)}))(LR.fb())}})});
     const o = await r.json();
     if (!r.ok) throw new Error(o.error || "오류");
     $("#al-ok").innerHTML = `신청됐어요. 알림 발송을 시작하면 <b>${esc($("#al-email").value)}</b>로 지금 조건에 맞는 변화를 보내 드려요.`;

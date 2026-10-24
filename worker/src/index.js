@@ -215,18 +215,48 @@ async function report(env, b) {
   return { ok: true };
 }
 
+// 관심 표시 익명 집계 — 항목별 관심 있음·없음 횟수, 숨긴 범위, 이유. 개인 정보 없음
+const FB_ACTS = ["star", "unstar", "hide", "unhide"], FB_SCOPES = ["item", "law", "keyword"];
+const FB_REASONS = ["나와 상관없는 대상", "이미 알고 있음", "너무 사소함"];
+async function feedback(env, b, ip) {
+  const key = String(b.key || ""), act = String(b.act || "");
+  if (!/^(law|admrul|ordin):\d{1,12}$/.test(key) || !FB_ACTS.includes(act)) return { error: "잘못된 표시" };
+  const day = new Date().toISOString().slice(0, 10), kl = `fbl:${day}:${ip}`;
+  const n = +(await env.LIMITS.get(kl)) || 0;
+  if (n >= 300) return { ok: true };                      // 한도를 넘으면 조용히 버림
+  await env.LIMITS.put(kl, String(n + 1), { expirationTtl: 172800 });
+  const kf = `fb:${key}`;
+  const doc = JSON.parse((await env.LIMITS.get(kf)) || "null") || { star: 0, hide: 0, scope: {}, reasons: {} };
+  if (act === "star") doc.star++;
+  if (act === "unstar") doc.star = Math.max(0, doc.star - 1);
+  if (act === "hide") {
+    doc.hide++;
+    const s = FB_SCOPES.includes(b.scope) ? b.scope : "item";
+    doc.scope[s] = (doc.scope[s] || 0) + 1;
+    if (FB_REASONS.includes(b.reason)) doc.reasons[b.reason] = (doc.reasons[b.reason] || 0) + 1;
+  }
+  if (act === "unhide") doc.hide = Math.max(0, doc.hide - 1);
+  doc.at = new Date().toISOString();
+  await env.LIMITS.put(kf, JSON.stringify(doc));
+  return { ok: true };
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(env) });
     if (url.pathname === "/health") return json(env, { ok: true });
-    if (!["/ask", "/profile", "/subscribe", "/report"].includes(url.pathname) || req.method !== "POST") return json(env, { error: "not found" }, 404);
+    if (!["/ask", "/profile", "/subscribe", "/report", "/feedback"].includes(url.pathname) || req.method !== "POST") return json(env, { error: "not found" }, 404);
     let body;
     try { body = await req.json(); } catch { return json(env, { error: "bad json" }, 400); }
     const ip = req.headers.get("cf-connecting-ip") || "unknown";
     if (url.pathname === "/report") {
       if (await overLimit(env, ip)) return json(env, { error: "오늘 이용 한도를 넘었어요." }, 429);
       try { const r = await report(env, body); return json(env, r, r.error ? 400 : 200); }
+      catch (e) { return json(env, { error: "잠시 후 다시 시도해 주세요" }, 502); }
+    }
+    if (url.pathname === "/feedback") {
+      try { const r = await feedback(env, body, ip); return json(env, r, r.error ? 400 : 200); }
       catch (e) { return json(env, { error: "잠시 후 다시 시도해 주세요" }, 502); }
     }
     if (url.pathname === "/subscribe") {
