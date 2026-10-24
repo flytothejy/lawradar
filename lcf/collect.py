@@ -232,7 +232,9 @@ def _adm_prev(it):
 
 def enrich_admrul(it):
     body = api.service("admrul", ID=it["seq"])
-    det = {"v": DETAIL_V}
+    if not isinstance(body, dict):                       # 본문이 없으면 안내 문자열만 옴 ('일치하는 행정규칙이 없습니다' 등)
+        it["detail"] = {"v": DETAIL_V, "missing": str(body)[:120]}
+        return it
     reason = _lines((body.get("제개정이유") or {}).get("제개정이유내용"))
     main, why, sec = [], [], None
     for l in reason:
@@ -254,7 +256,8 @@ def enrich_admrul(it):
     elif it["change"] in ("일부개정", "전부개정") and arts:
         prev = _adm_prev(it)
         if prev:
-            old = _adm_articles(api.service("admrul", ID=prev))
+            ob = api.service("admrul", ID=prev)
+            old = _adm_articles(ob) if isinstance(ob, dict) else []
             if old:
                 det["prev"] = prev
                 det["diff"] = textdiff.compare(textdiff.article_map(old), textdiff.article_map(arts))
@@ -284,8 +287,8 @@ def needs_enrich(it, regions):
 def _enrich(it):
     try:
         {"law": enrich_law, "admrul": enrich_admrul, "ordin": enrich_ordin}[it["kind"]](it)
-    except (RuntimeError, KeyError, ValueError) as e:
-        log(f"  보강 실패 {it['name']}: {e}")
+    except (RuntimeError, KeyError, ValueError, AttributeError, TypeError, IndexError) as e:   # 한 건 실패로 실행 전체가 멈추지 않게
+        log(f"  보강 실패 {it['name']}: {type(e).__name__} {e}")
 
 
 def enrich_range(start, end, minutes=60):
