@@ -1,0 +1,30 @@
+{
+  "_설명": "다이제스트를 받을 구독 단위. regions: 자치법규 지자체기관명(정확히 일치), topics: 비우면 생활 주제 전체, packs: config/packs/의 분야 팩 id (브리핑 맨 위에 따로 묶음). 첫 프로필이 첫 화면 브리핑 (national = 전국, 지역 없음)",
+  "profiles": [
+    {
+      "id": "national",
+      "name": "전국",
+      "regions": [],
+      "topics": [],
+      "packs": [
+        "real_estate_tax"
+      ],
+      "law_max": 15,
+      "ordin_max": 0
+    },
+    {
+      "id": "hwaseong",
+      "name": "화성시 주민",
+      "regions": [
+        "경기도 화성시",
+        "경기도"
+      ],
+      "topics": [],
+      "packs": [
+        "real_estate_tax"
+      ],
+      "law_max": 10,
+      "ordin_max": 25
+    }
+  ]
+}

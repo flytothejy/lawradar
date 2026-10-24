@@ -1,0 +1,83 @@
+name: backlog
+
+# 과거분 쉬운 말 정리 — 보강(부칙까지) → Haiku 배치 생성 → Sonnet 배치 전수 검토 (lcf/backlog.py)
+# 시간 한도에 걸리면 자기 자신을 다시 실행해 이어 감. daily·digest가 기다리면 양보하고 daily가 끝난 뒤 다시 걸어 줌
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "한 번 실행에서 쓸 최대 시간(분)"
+        default: "300"
+      limit:
+        description: "시험: 이 건수만 정리하고 끝 (보강 건너뜀). 비우면 전체"
+        default: ""
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: lcf-data
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ${{ vars.LCF_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 340
+    env:
+      LAW_OC: ${{ secrets.LAW_OC }}
+      LAW_PAUSE: "0.15"
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - name: pull
+        run: python -m lcf sync pull --all-days
+      - name: backlog
+        id: bl
+        run: |
+          set +e
+          python -m lcf backlog --minutes ${{ inputs.minutes }} ${{ inputs.limit != '' && format('--limit {0}', inputs.limit) || '' }}
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          [ $code -eq 0 ] || [ $code -eq 3 ]
+      - name: 이어하기 결정
+        id: next
+        if: always() && steps.bl.outputs.code != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ steps.bl.outputs.code }}" != "3" ]; then
+            echo '{"pending": false}' > data/lcf/state/backlog_resume.json; exit 0
+          fi
+          busy=0
+          for w in daily.yml digest.yml; do for s in queued pending waiting requested; do
+            n=$(gh run list -w $w -s $s --json databaseId -q 'length'); busy=$((busy + n)); done; done
+          if [ $busy -gt 0 ]; then
+            printf '{"pending": true, "minutes": "%s", "ref": "%s"}' "${{ inputs.minutes }}" "${{ github.ref_name }}" > data/lcf/state/backlog_resume.json
+          else
+            echo "dispatch=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: push to R2
+        if: always()
+        run: python -m lcf sync push
+      - name: 이어서 실행
+        if: steps.next.outputs.dispatch == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run backlog.yml --ref ${{ github.ref_name }} -f minutes=${{ inputs.minutes }}
+      - name: 끝나면 알림
+        if: steps.bl.outputs.code == '0' && inputs.limit == ''
+        run: python -m lcf alert "✅ <b>법레이더</b> 과거분 쉬운 말 정리 끝 — $(python -c "import json;d=json.load(open('data/lcf/state/backlog.json'));print(d['done'],'건 · 약 $',d['usd'])")"
+      - name: 실패 알림
+        if: failure()
+        run: python -m lcf alert "❌ <b>법레이더</b> 과거분 정리 실패 — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

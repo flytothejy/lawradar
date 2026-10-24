@@ -1,0 +1,243 @@
+{
+  "_설명": "질문 유형 판별 테스트 세트. 질문 응답 기능을 만들기 전·바꿀 때마다 이 세트로 판별기를 돌려 확인한다. 기준은 docs/SCENARIO.md '질문으로 들어오는 경우'.",
+  "_유형": {
+    "change": "변화 확인 — 언제·무엇이 바뀌었나. 전→후·시행일·원문 링크로 답하고 구독 안내",
+    "current": "현행 규정 확인 — 지금 기준이 뭔가. 현행 조문 요약·원문·최근 변경 이력",
+    "judgment": "개별 판정 — 내 경우 되나/얼마인가/어떻게 해야 하나. 판정하지 않고 관련 변화·조문만 + 전문가 확인 안내",
+    "out_of_scope": "범위 밖 — 소송 전략, 신고·서류 대행, 법령과 무관"
+  },
+  "_원칙": "애매하면 judgment로 본다. must_not 은 절대 나오면 안 되는 유형 (judgment를 change로 잘못 보는 것이 가장 위험)",
+  "cases": [
+    {
+      "q": "일시적 2주택 비과세 기간이 바뀌었나요?",
+      "type": "change",
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "올해 양도세 관련해서 바뀐 거 있어요?",
+      "type": "change",
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "취득세 중과 기준 언제부터 달라져요?",
+      "type": "change",
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "유류세 인하 연장됐나요?",
+      "type": "change"
+    },
+    {
+      "q": "화성시 출산장려금 조례 최근에 개정됐어?",
+      "type": "change"
+    },
+    {
+      "q": "숙박 앱 영업신고증 확인 의무 언제 시행이에요?",
+      "type": "change"
+    },
+    {
+      "q": "건강보험료 분할 납부 횟수 늘어났다던데 맞아요?",
+      "type": "change"
+    },
+    {
+      "q": "지금 일시적 2주택 비과세 요건이 뭐예요?",
+      "type": "current",
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "조정대상지역 취득세 중과 기준 알려줘",
+      "type": "current",
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "현재 휘발유 유류세가 리터당 얼마예요?",
+      "type": "current"
+    },
+    {
+      "q": "음식점 영업자 위생교육은 몇 시간 받아야 해요?",
+      "type": "current"
+    },
+    {
+      "q": "통장 임기는 몇 년이에요?",
+      "type": "current"
+    },
+    {
+      "q": "저 동탄 아파트 팔면 비과세 되나요?",
+      "type": "judgment",
+      "must_not": [
+        "change",
+        "current"
+      ],
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "1주택인데 이사 가면서 새 집을 먼저 샀어요. 양도세 내야 해요?",
+      "type": "judgment",
+      "must_not": [
+        "change",
+        "current"
+      ],
+      "pack": "real_estate_tax",
+      "note": "변화 질문처럼 보이지만 개인 상황 판정 요청"
+    },
+    {
+      "q": "이번에 2년으로 바뀌었다는데 저는 작년에 샀으니까 3년 적용되는 거 맞죠?",
+      "type": "judgment",
+      "must_not": [
+        "change"
+      ],
+      "pack": "real_estate_tax",
+      "note": "경계: 변화 언급 + 본인 적용 여부 확인 → 판정"
+    },
+    {
+      "q": "양도세 얼마 나올지 계산해 줄 수 있어요?",
+      "type": "judgment",
+      "must_not": [
+        "change",
+        "current"
+      ],
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "증여하는 게 나아요 파는 게 나아요?",
+      "type": "judgment",
+      "must_not": [
+        "change",
+        "current"
+      ],
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "제 펜션도 영업신고증 확인 대상이에요?",
+      "type": "judgment",
+      "must_not": [
+        "change"
+      ],
+      "note": "경계: 대상 여부 확인은 판정"
+    },
+    {
+      "q": "우리 가게가 과태료 대상인지 봐 주세요",
+      "type": "judgment",
+      "must_not": [
+        "change",
+        "current"
+      ]
+    },
+    {
+      "q": "임대사업자 등록 말소되면 저는 중과 배제 못 받나요?",
+      "type": "judgment",
+      "must_not": [
+        "change",
+        "current"
+      ],
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "조정대상지역에 집 한 채 있고 지방에 미분양 하나 사면 다주택 중과돼요?",
+      "type": "judgment",
+      "must_not": [
+        "change",
+        "current"
+      ],
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "시행일 전에 계약하면 예전 규정 적용받을 수 있어요?",
+      "type": "judgment",
+      "must_not": [
+        "change"
+      ],
+      "note": "경계: 경과조치 해석 → 판정. 부칙 원문만 보여 줌"
+    },
+    {
+      "q": "이번 개정으로 저한테 유리해진 거예요?",
+      "type": "judgment",
+      "must_not": [
+        "change"
+      ]
+    },
+    {
+      "q": "출산장려금 둘째면 저 얼마 받아요?",
+      "type": "judgment",
+      "must_not": [
+        "change",
+        "current"
+      ],
+      "note": "경계: 금액은 조례에 있지만 '저'의 수급 여부는 판정"
+    },
+    {
+      "q": "출산장려금 둘째 아이 금액이 조례에 얼마로 돼 있어요?",
+      "type": "current",
+      "note": "경계: 같은 주제라도 규정 내용만 묻는 건 현행 확인"
+    },
+    {
+      "q": "2년 이내로 바뀐 게 언제 취득한 집부터 적용돼요?",
+      "type": "current",
+      "pack": "real_estate_tax",
+      "note": "경계: 적용 시기(부칙)를 일반적으로 묻는 것 → 현행 규정. 단 '제 집은'이 붙으면 판정"
+    },
+    {
+      "q": "통신판매중개업자 과태료가 얼마예요?",
+      "type": "current"
+    },
+    {
+      "q": "양도세 신고 대신 해 줄 수 있어요?",
+      "type": "out_of_scope",
+      "must_not": [
+        "change",
+        "current"
+      ]
+    },
+    {
+      "q": "세무서랑 소송하면 이길 수 있을까요?",
+      "type": "out_of_scope",
+      "must_not": [
+        "change",
+        "current"
+      ]
+    },
+    {
+      "q": "홈택스 비밀번호 잊어버렸어요",
+      "type": "out_of_scope"
+    },
+    {
+      "q": "내일 날씨 어때?",
+      "type": "out_of_scope"
+    },
+    {
+      "q": "세무사 추천해 주세요",
+      "type": "out_of_scope"
+    },
+    {
+      "q": "바뀐 거 있으면 알려줘",
+      "type": "change",
+      "note": "프로필 기준 최근 변화 요약"
+    },
+    {
+      "q": "부동산 세금 쪽 이번 달 뭐 바뀌었어?",
+      "type": "change",
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "작년이랑 비교해서 종부세 뭐가 달라졌어요?",
+      "type": "change",
+      "pack": "real_estate_tax"
+    },
+    {
+      "q": "다주택자 중과 배제 미분양 기한 연장된 거 맞죠? 저 내년에 사려고요",
+      "type": "judgment",
+      "must_not": [
+        "change"
+      ],
+      "pack": "real_estate_tax",
+      "note": "경계: 사실 확인 + 본인 계획 → 사실 부분만 답하고 판정은 안 함. 판별은 judgment"
+    },
+    {
+      "q": "다주택자 양도소득세 알려주세요",
+      "type": "current",
+      "must_not": [
+        "out_of_scope"
+      ]
+    }
+  ]
+}

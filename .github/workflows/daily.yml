@@ -1,0 +1,98 @@
+name: daily
+
+# 매일 법령·행정규칙·자치법규 변경 수집 → 화면 데이터 → 텔레그램 일일 요약
+# 상태는 R2(lcf/)에 두고, 저장소에는 커밋하지 않음
+on:
+  schedule:
+    - cron: "40 22 * * *"     # 매일 한국 07:40
+  workflow_dispatch:
+    inputs:
+      notify:
+        description: "텔레그램 알림 보내기"
+        type: boolean
+        default: true
+      polish_from:
+        description: "문장 다듬기 범위 시작(YYYY-MM-DD). 비우면 최근 12일"
+        default: ""
+      enrich_from:
+        description: "보강 넓히기: 이 날짜(YYYY-MM-DD)부터 오늘까지 조문 비교·본문 보강만 다시 (최근부터, 50분 한도)"
+        default: ""
+      seed_from:
+        description: "처음 채우기: 이 날짜(YYYY-MM-DD)부터 어제까지 기준선으로 수집 (알림 없음). 평소엔 비워 두기"
+        default: ""
+
+permissions:
+  contents: read
+  actions: write          # 미뤄 둔 백필 이어하기를 다시 걸기 위해
+
+concurrency:
+  group: lcf-data
+  cancel-in-progress: false
+
+jobs:
+  run:
+    # 법령 API는 등록한 서버 IP에서만 호출됨 — 막히면 저장소 변수 LCF_RUNNER를 self-hosted로 (README '실행 위치')
+    runs-on: ${{ vars.LCF_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 120
+    env:
+      LAW_OC: ${{ secrets.LAW_OC }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}     # 없으면 문장 다듬기만 건너뜀
+      LCF_LLM_MODEL: ${{ vars.LCF_LLM_MODEL }}                 # 선택: 기본 claude-sonnet-5-5
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - name: pull state from R2
+        run: python -m lcf sync pull
+      - name: seed (처음 한 번)
+        if: inputs.seed_from != ''
+        run: python -m lcf collect --from ${{ inputs.seed_from }} --seed
+        env:
+          LCF_ENRICH_MAX: "2000"
+      - name: enrich 범위 넓혀 보강 (수동 실행 때만)
+        if: inputs.enrich_from != ''
+        run: python -m lcf enrich --from ${{ inputs.enrich_from }} --minutes 50 || [ $? -eq 3 ]
+      - name: polish 범위 넓혀 다듬기 (수동 실행 때만)
+        if: inputs.polish_from != ''
+        run: python -m lcf polish --from ${{ inputs.polish_from }} --max 400
+      - name: collect + polish + build
+        run: python -m lcf daily --no-notify
+      - name: push to R2
+        if: always()
+        run: python -m lcf sync push
+      - name: notify
+        if: success() && (github.event_name == 'schedule' || inputs.notify)
+        run: python -m lcf notify
+      - name: 미뤄 둔 백필 이어하기
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          f=data/lcf/state/backfill_resume.json
+          [ -f $f ] && python -c "import json,sys; sys.exit(0 if json.load(open('$f')).get('pending') else 1)" || exit 0
+          read from to chunk minutes ref < <(python -c "import json; d=json.load(open('$f')); print(d['from'], d['to'], d['chunk'], d['minutes'], d['ref'])")
+          gh workflow run backfill.yml --ref $ref -f from=$from -f to=$to -f chunk=$chunk -f minutes=$minutes
+          echo '{"pending": false}' > $f
+          python -c "from lcf import sync; sync.put(['state/backfill_resume.json'])"
+      - name: 미뤄 둔 과거분 정리 이어하기
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          f=data/lcf/state/backlog_resume.json
+          [ -f $f ] && python -c "import json,sys; sys.exit(0 if json.load(open('$f')).get('pending') else 1)" || exit 0
+          read minutes ref < <(python -c "import json; d=json.load(open('$f')); print(d['minutes'], d['ref'])")
+          gh workflow run backlog.yml --ref $ref -f minutes=$minutes
+          echo '{"pending": false}' > $f
+          python -c "from lcf import sync; sync.put(['state/backlog_resume.json'])"
+      - name: notify failure
+        if: failure()
+        run: python -m lcf alert "❌ <b>법레이더</b> 실행 실패 — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

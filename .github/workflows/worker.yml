@@ -1,0 +1,74 @@
+name: worker
+
+# 질문 응답 Worker(/ask) 배포 → 색인 갱신 → 테스트 세트로 판별 평가
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", "tests/qa_cases.json", "tests/qa_eval.py", ".github/workflows/worker.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: pip install -q -r requirements.txt
+      - name: 질문 색인 만들어 R2에 올림
+        run: python -m lcf sync pull --all-days && python -m lcf askindex --put
+      - name: wrangler.toml 만들기 (KV 없으면 생성)
+        working-directory: worker
+        run: |
+          set -e
+          ACC=$(echo "$R2_ACCOUNT_ID" | grep -oE '[0-9a-f]{32}' | head -1)
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACC" >> "$GITHUB_ENV"
+          export CLOUDFLARE_ACCOUNT_ID=$ACC
+          W="npx --yes wrangler@4"
+          KV=$($W kv namespace list 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s.slice(s.indexOf("[")));const n=a.find(x=>x.title==="lcf-ask-limits");process.stdout.write(n?n.id:"")}catch(e){}})')
+          if [ -z "$KV" ]; then
+            $W kv namespace create lcf-ask-limits | tee kv.txt
+            KV=$(grep -oE '[0-9a-f]{32}' kv.txt | head -1)
+          fi
+          [ -n "$KV" ] || { echo "KV 네임스페이스를 만들지 못했어요 (토큰 권한: Workers KV Storage Edit 확인)"; exit 1; }
+          sed -e "s/__ACCOUNT__/$ACC/" -e "s/__BUCKET__/$R2_BUCKET/" -e "s/__KV__/$KV/" wrangler.toml.tmpl > wrangler.toml
+      - name: 배포
+        id: dep
+        working-directory: worker
+        run: |
+          set -o pipefail
+          npx --yes wrangler@4 deploy 2>&1 | tee deploy.txt
+          URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.txt | head -1)
+          [ -n "$URL" ] || { echo "workers.dev 주소를 못 찾았어요 — 대시보드 Workers & Pages에서 workers.dev 서브도메인을 정했는지 확인"; exit 1; }
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          TK=$(openssl rand -hex 16); echo "::add-mask::$TK"; echo "TEST_KEY=$TK" >> "$GITHUB_ENV"
+          node -e 'process.stdout.write(JSON.stringify({ANTHROPIC_API_KEY:process.env.ANTHROPIC_API_KEY,TEST_KEY:process.argv[1]}))' "$TK" > secrets.json
+          npx --yes wrangler@4 secret bulk secrets.json
+          rm -f secrets.json
+      - name: 주소를 R2에 기록 (화면이 읽음)
+        run: |
+          mkdir -p data/lcf/state && echo "${{ steps.dep.outputs.url }}/ask" > data/lcf/state/ask_url.txt
+          python -c "from lcf import sync; sync.put(['state/ask_url.txt'])"
+      - name: 판별 평가 (tests/qa_cases.json)
+        env:
+          ASK_URL: ${{ steps.dep.outputs.url }}/ask
+        run: sleep 15 && python tests/qa_eval.py --answers 2
