@@ -91,7 +91,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run backlog.yml --ref ${{ github.ref_name }} -f minutes=${{ inputs.minutes }} -f days=${{ inputs.days }} -f max_usd=${{ inputs.max_usd }}
       - name: 끝나면 알림
-        if: (steps.bl.outputs.code == '0' || steps.bl.outputs.code == '4') && inputs.limit == ''
+        if: steps.bl.outcome == 'success' && (steps.bl.outputs.code == '0' || steps.bl.outputs.code == '4') && inputs.limit == ''
         run: python -m lcf alert "${{ steps.bl.outputs.code == '4' && '⏸ 비용 한도로 멈춤' || '✅ 구간 정리 끝' }} <b>법레이더</b> 과거분 최근 ${{ inputs.days }}일 — $(python -c "import json;d=json.load(open('data/lcf/state/backlog.json'));w=d['windows']['${{ inputs.days }}'];print(w['done'],'건 · 약 $',w['usd'],'(전체 누적 $',d['usd'],')')")"
       - name: 실패 알림
         if: failure()
