@@ -8,7 +8,7 @@
 --max-usd: 이 구간에서 쓴 돈이 넘으면 새 묶음을 시작하지 않고 멈춤 (0이면 한도 없음)
 
 범위 (scope)
-- 법령·행정규칙(고시): 최근 2년, 정비(low) 제외 전부
+- 법령·행정규칙(고시): 최근 2년, 정비(low) 제외 전부 (고시는 본문·부칙·이전 판 조문 비교까지 보강)
 - 자치법규: 최근 90일, 정비 제외 전부
 - 시행일이 아직 안 온 것: 종류 무관 전부 (2년 안 공포분)
 이미 v2로 정리된 항목(매일 실행의 Sonnet 결과 등)은 건너뜀
@@ -32,6 +32,7 @@ from .core import DAYS, STATE, log, read_json, status, today, write_json
 
 STATE_F = STATE / "backlog.json"
 MODEL = os.environ.get("LCF_BACKLOG_MODEL") or "claude-haiku-5-5"
+RETRY_MODEL = os.environ.get("LCF_BACKLOG_RETRY_MODEL") or llm.REVIEW_MODEL   # 첫 시도가 잘리거나 비면 다시 할 때는 Sonnet
 CHUNK = 2000                       # 배치 하나에 넣을 항목 수
 DAYS_MAX = 730
 WINDOWS = [(182, "6개월"), (365, "1년"), (547, "1년 6개월"), (730, "2년")]
@@ -202,7 +203,7 @@ def run(minutes=300, limit=None, dry=False, days=DAYS_MAX, max_usd=0.0):
     deadline = t0 + minutes * 60 - 15 * 60                 # 저장·올리기 시간 15분 남김
     now = today()
     st = read_json(STATE_F, {"stage": "enrich", "batches": [], "done": 0, "usd": 0.0})
-    if st.get("days") != days and not limit:                 # 구간이 바뀌면 보강부터 다시 (끝낸 항목은 건너뜀)
+    if (st.get("days") != days or st["stage"] == "done") and not limit:   # 구간이 바뀌거나 끝난 뒤 다시 실행하면 보강부터 (끝낸 항목은 건너뜀)
         st["days"] = days
         st["stage"] = "enrich"
     win = st.setdefault("windows", {}).setdefault(str(days), {"done": 0, "usd": 0.0})
@@ -228,13 +229,17 @@ def run(minutes=300, limit=None, dry=False, days=DAYS_MAX, max_usd=0.0):
                 log(f"구간 {days}일 정리 끝 · 이 구간 {win['done']}건 ${win['usd']:.2f} · 전체 누적 {st['done']}건 ${st['usd']:.2f}")
                 return 0
             items = load_items(keys)
-            reqs = [{"custom_id": _cid(k), "params": {"model": MODEL, "max_tokens": 6000, "system": llm.SYSTEM,
+            fails = st.get("fails") or {}
+            gm = {k: RETRY_MODEL if fails.get(k) else MODEL for k in keys}
+            reqs = [{"custom_id": _cid(k), "params": {"model": gm[k], "max_tokens": 6000, "system": llm.SYSTEM,
                                                       "messages": [{"role": "user", "content": llm.gen_prompt([items[k][1]])}]}}
                     for k in keys if k in items]
-            log(f"생성 배치: {len(reqs)}건 ({MODEL})")
+            nr = sum(1 for k in keys if gm[k] != MODEL)
+            log(f"생성 배치: {len(reqs)}건 ({MODEL}" + (f" · 다시 하는 {nr}건은 {RETRY_MODEL}" if nr else "") + ")")
             if dry:
                 print(json.dumps(reqs[0], ensure_ascii=False)[:3000]); return 0
-            cur = st["cur"] = {"keys": keys, "gen": submit(reqs), "review": None}
+            cur = st["cur"] = {"keys": keys, "gen": submit(reqs), "review": None,
+                               "models": {_cid(k): gm[k] for k in keys if gm[k] != MODEL}}
             write_json(STATE_F, st, pretty=True)
         items = load_items(cur["keys"])
         j = wait(cur["gen"], deadline)
@@ -256,7 +261,8 @@ def run(minutes=300, limit=None, dry=False, days=DAYS_MAX, max_usd=0.0):
             made[k] = (ai, problems)
             if not problems and not ai["skip"] and ai.get("title"):
                 review_q.append(it)                          # 과거분은 전부 2차 검토
-        gen_usd = sum(llm.usd(MODEL, u) for _, u in gen.values()) / 2
+        gm = cur.get("models") or {}
+        gen_usd = sum(llm.usd(gm.get(cid, MODEL), u) for cid, (_, u) in gen.items()) / 2
         if not cur.get("review") and review_q:
             reqs = [{"custom_id": _cid(it["key"]), "params": {"model": llm.REVIEW_MODEL, "max_tokens": 1000, "system": llm.REVIEW,
                                                               "messages": [{"role": "user", "content": llm.review_prompt([it], {it["key"]: made[it["key"]][0]})}]}}
@@ -281,7 +287,7 @@ def run(minutes=300, limit=None, dry=False, days=DAYS_MAX, max_usd=0.0):
             p, _ = items[k]
             if any(it["key"] == k for it in review_q):
                 llm.apply_review(ai, problems, rv.get(_cid(k)))
-            ai = llm.finalize(ai, problems, MODEL)
+            ai = llm.finalize(ai, problems, gm.get(_cid(k), MODEL))
             ai["review_model"] = llm.REVIEW_MODEL
             by_file.setdefault(p, {})[k] = ai
             stat[ai["status"]] += 1
