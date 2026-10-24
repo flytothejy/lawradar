@@ -169,12 +169,11 @@ def wanted(it, regions, pack_list):
         return False
     if it["kind"] == "ordin":                     # 전국 조례 (지역 페이지·상세 페이지에 씀)
         return ORDIN_SCOPE == "all" or it["org"] in regions
-    if any(packs.match(it, p, regions) for p in pack_list):
-        return True
+    # 법령·고시는 타임라인에 보이는 범위(정비 제외 전부)와 같게 — 쉬운 말이 없으면 법 이름만 보여서
     if it["kind"] == "law":
-        return c["life"] or c["level"] == "high"
+        return True
     if it["kind"] == "admrul":
-        return it["type"] == "고시" and c["life"]
+        return it["type"] == "고시"
     return False
 
 
