@@ -12,7 +12,7 @@
   python -m lcf backfill --from 날짜 --to 날짜 [--chunk 30] [--minutes 300] [--no-push]   과거 백필 (이어하기)
   python -m lcf sync pull|push|ls [--all-days]
   python -m lcf alert "메시지"
-  python -m lcf backlog [--minutes 300] [--limit N] [--dry]   과거분 보강 → 배치 정리 (이어하기)
+  python -m lcf backlog [--minutes 300] [--limit N] [--days 730] [--max-usd 0] [--count]   과거분 보강 → 배치 정리 (이어하기)
   python -m lcf bench --models a,b [--n 50] [--days 30]   모델 비교 시험 (data/lcf/bench/)
   python -m lcf probe service|search|find …   법령 API 응답 구조 보기 (lcf/probe.py)
 """
@@ -77,7 +77,10 @@ def main(a):
             {"push": sync.push, "ls": sync.ls}[a[1]]()
     elif cmd == "backlog":
         from . import backlog
-        sys.exit(backlog.run(_opt(a, "--minutes", int, 300), _opt(a, "--limit", int), dry="--dry" in a))
+        if "--count" in a:
+            backlog.count(); sys.exit(0)
+        sys.exit(backlog.run(_opt(a, "--minutes", int, 300), _opt(a, "--limit", int), dry="--dry" in a,
+                             days=_opt(a, "--days", int, 730), max_usd=_opt(a, "--max-usd", float, 0.0)))
     elif cmd == "bench":
         from . import bench
         bench.run(_opt(a, "--models", str, "claude-sonnet-5-5,claude-haiku-5-5").split(","), _opt(a, "--n", int, 50), _opt(a, "--days", int, 30))

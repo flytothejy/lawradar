@@ -8,6 +8,18 @@ on:
       minutes:
         description: "한 번 실행에서 쓸 최대 시간(분)"
         default: "300"
+      days:
+        description: "구간: 최근 며칠 안 공포분 (182=6개월, 365=1년, 547=1년 6개월, 730=2년)"
+        type: choice
+        options: ["182", "365", "547", "730"]
+        default: "182"
+      max_usd:
+        description: "이 구간 비용 한도(달러). 넘으면 새 묶음을 시작하지 않고 멈춤. 0이면 한도 없음"
+        default: "0"
+      count:
+        description: "건수·예상 비용만 보고 끝 (API 비용 없음)"
+        type: boolean
+        default: false
       limit:
         description: "시험: 이 건수만 정리하고 끝 (보강 건너뜀). 비우면 전체"
         default: ""
@@ -42,14 +54,17 @@ jobs:
       - run: pip install -q -r requirements.txt
       - name: pull
         run: python -m lcf sync pull --all-days
+      - name: 구간별 건수·예상 비용
+        run: python -m lcf backlog --count
       - name: backlog
         id: bl
+        if: ${{ !inputs.count }}
         run: |
           set +e
-          python -m lcf backlog --minutes ${{ inputs.minutes }} ${{ inputs.limit != '' && format('--limit {0}', inputs.limit) || '' }}
+          python -m lcf backlog --minutes ${{ inputs.minutes }} --days ${{ inputs.days }} --max-usd ${{ inputs.max_usd }} ${{ inputs.limit != '' && format('--limit {0}', inputs.limit) || '' }}
           code=$?
           echo "code=$code" >> "$GITHUB_OUTPUT"
-          [ $code -eq 0 ] || [ $code -eq 3 ]
+          [ $code -eq 0 ] || [ $code -eq 3 ] || [ $code -eq 4 ]
       - name: 이어하기 결정
         id: next
         if: always() && steps.bl.outputs.code != ''
@@ -63,7 +78,7 @@ jobs:
           for w in daily.yml digest.yml; do for s in queued pending waiting requested; do
             n=$(gh run list -w $w -s $s --json databaseId -q 'length'); busy=$((busy + n)); done; done
           if [ $busy -gt 0 ]; then
-            printf '{"pending": true, "minutes": "%s", "ref": "%s"}' "${{ inputs.minutes }}" "${{ github.ref_name }}" > data/lcf/state/backlog_resume.json
+            printf '{"pending": true, "minutes": "%s", "ref": "%s", "days": "%s", "max_usd": "%s"}' "${{ inputs.minutes }}" "${{ github.ref_name }}" "${{ inputs.days }}" "${{ inputs.max_usd }}" > data/lcf/state/backlog_resume.json
           else
             echo "dispatch=1" >> "$GITHUB_OUTPUT"
           fi
@@ -74,10 +89,10 @@ jobs:
         if: steps.next.outputs.dispatch == '1'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run backlog.yml --ref ${{ github.ref_name }} -f minutes=${{ inputs.minutes }}
+        run: gh workflow run backlog.yml --ref ${{ github.ref_name }} -f minutes=${{ inputs.minutes }} -f days=${{ inputs.days }} -f max_usd=${{ inputs.max_usd }}
       - name: 끝나면 알림
-        if: steps.bl.outputs.code == '0' && inputs.limit == ''
-        run: python -m lcf alert "✅ <b>법레이더</b> 과거분 쉬운 말 정리 끝 — $(python -c "import json;d=json.load(open('data/lcf/state/backlog.json'));print(d['done'],'건 · 약 $',d['usd'])")"
+        if: (steps.bl.outputs.code == '0' || steps.bl.outputs.code == '4') && inputs.limit == ''
+        run: python -m lcf alert "${{ steps.bl.outputs.code == '4' && '⏸ 비용 한도로 멈춤' || '✅ 구간 정리 끝' }} <b>법레이더</b> 과거분 최근 ${{ inputs.days }}일 — $(python -c "import json;d=json.load(open('data/lcf/state/backlog.json'));w=d['windows']['${{ inputs.days }}'];print(w['done'],'건 · 약 $',w['usd'],'(전체 누적 $',d['usd'],')')")"
       - name: 실패 알림
         if: failure()
         run: python -m lcf alert "❌ <b>법레이더</b> 과거분 정리 실패 — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
