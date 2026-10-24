@@ -235,6 +235,7 @@ def enrich_admrul(it):
     if not isinstance(body, dict):                       # 본문이 없으면 안내 문자열만 옴 ('일치하는 행정규칙이 없습니다' 등)
         it["detail"] = {"v": DETAIL_V, "missing": str(body)[:120]}
         return it
+    det = {"v": DETAIL_V}
     reason = _lines((body.get("제개정이유") or {}).get("제개정이유내용"))
     main, why, sec = [], [], None
     for l in reason:
