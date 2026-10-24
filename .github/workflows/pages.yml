@@ -1,0 +1,58 @@
+name: pages
+
+# 화면 배포 — web/index.html + R2의 site/ (Settings → Pages → Source: GitHub Actions)
+on:
+  workflow_run:
+    workflows: ["daily", "digest", "worker"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ["web/**", "lcf/build.py", "lcf/digest.py", "lcf/pages.py", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - run: python -m lcf sync pull --all-days
+      - run: python -m lcf build
+      - name: 변경 상세 페이지·sitemap
+        run: python -m lcf pages
+      - name: 질문 색인 갱신 (R2)
+        continue-on-error: true
+        run: python -m lcf askindex --put
+      - name: assemble
+        run: |
+          rm -rf _site && mkdir -p _site
+          cp web/*.html web/*.js _site/
+          cp -r data/lcf/site/. _site/
+          cp -r data/lcf/pages/. _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - id: d
+        uses: actions/deploy-pages@v4

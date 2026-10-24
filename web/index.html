@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>법레이더 — 내 일과 관련된 규칙이 바뀌면 먼저 알려 드려요</title>
+<meta property="og:site_name" content="법레이더">
+<meta name="description" content="법레이더 · 내 상황을 적으면 법령·고시·우리 동네 조례 중 나에게 해당하는 변화만 골라 바뀌기 전과 후를 쉬운 말로 보여 드려요.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F8FA; --card:#FFFFFF; --ink:#1D2433; --muted:#626B7E; --rule:#DCE0E7;
+  --ins:#2349C2; --ins-bg:#E7ECFB; --ins-deep:#1A3794; --del:#B4372E; --del-bg:#F9E9E7; --focus:#2349C2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12151C; --card:#1A1E27; --ink:#E6E9EF; --muted:#9AA2B3; --rule:#2A303C;
+    --ins:#9DB2FF; --ins-bg:#1D2648; --ins-deep:#C3D0FF; --del:#FF8F84; --del-bg:#3A1F1E; --focus:#9DB2FF;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12151C; --card:#1A1E27; --ink:#E6E9EF; --muted:#9AA2B3; --rule:#2A303C;
+  --ins:#9DB2FF; --ins-bg:#1D2648; --ins-deep:#C3D0FF; --del:#FF8F84; --del-bg:#3A1F1E; --focus:#9DB2FF;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.65 "IBM Plex Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:40rem;margin:0 auto;padding:2.5rem 24px 4rem;min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--ins);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+[hidden]{display:none!important}
+.brand{display:inline-flex;align-items:center;gap:.45rem;font:700 1.0625rem/1 "Noto Serif KR",serif;color:var(--ink);text-decoration:none}
+.brand::before{content:"";width:.55rem;height:.55rem;border-radius:50%;background:var(--ins);box-shadow:0 0 0 3px var(--ins-bg)}
+.back{align-self:flex-start;font-size:.875rem;color:var(--muted);text-decoration:none;padding:.4rem 0;margin-top:1rem}
+h1{font:700 clamp(1.6rem,6vw,2.1rem)/1.35 "Noto Serif KR",serif;margin:1.75rem 0 .75rem;letter-spacing:-.01em;word-break:keep-all}
+h1.sm{font-size:1.5rem;margin-top:1rem}
+.lede{color:var(--muted);margin:0 0 1.75rem;font-size:.9375rem;word-break:keep-all}
+del{color:var(--del);background:var(--del-bg);text-decoration-thickness:1.5px;padding:0 .15em;border-radius:2px}
+ins{color:var(--ins);background:var(--ins-bg);text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;padding:0 .15em;border-radius:2px}
+.arrow{color:var(--muted);margin:0 .2em}
+.lbl{display:block;font-size:.875rem;font-weight:600;margin:0 0 .6rem}
+.hint{font-size:.8125rem;color:var(--muted);margin:.6rem 0 0}
+textarea,input[type=text],input[type=email],select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:.8rem 1rem;width:100%}
+textarea{border:1.5px solid var(--ins);line-height:1.6;resize:vertical;min-height:7.5rem}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
+.chip{font:inherit;font-size:.875rem;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:999px;padding:.55rem .9rem;min-height:44px;cursor:pointer}
+.grow{flex-grow:1;min-height:2rem}
+.cta{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;background:var(--ink);color:var(--paper);border:0;border-radius:14px;font:inherit;font-size:1rem;font-weight:600;text-decoration:none;cursor:pointer}
+.cta:disabled{opacity:.6;cursor:wait}
+.sub{display:block;text-align:center;font-size:.875rem;padding:.75rem;margin-top:.25rem}
+.err{color:var(--del);font-size:.875rem;margin:.75rem 0 0}
+.resume{display:flex;justify-content:space-between;align-items:center;gap:1rem;background:var(--ins-bg);border-radius:12px;padding:.75rem 1rem;font-size:.875rem;margin-top:1.25rem;color:var(--ink)}
+.resume a{font-weight:600;white-space:nowrap;text-decoration:none}
+.other{margin-top:2.5rem;border-top:1px solid var(--rule);padding-top:1rem;font-size:.875rem;color:var(--muted)}
+.other a{color:var(--ink);margin-right:1rem;display:inline-block;padding:.25rem 0}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:1rem;display:flex;flex-direction:column;gap:.35rem;margin-bottom:1.5rem}
+.card .k{font-size:.8125rem;color:var(--muted)}
+.card .k:not(:first-child){margin-top:.5rem}
+.card .v{font-weight:600}
+.card .v small{font-weight:400;color:var(--muted);font-size:.8125rem;margin-left:.4rem}
+.card select{padding:.5rem .6rem;border-radius:8px;min-height:44px}
+.row2{display:flex;gap:.5rem}
+fieldset{border:0;margin:0 0 1.5rem;padding:0}
+legend{font-size:.875rem;font-weight:600;padding:0;margin-bottom:.4rem}
+.ck{display:flex;align-items:center;gap:.75rem;min-height:44px;font-size:.9375rem}
+.ck input{width:20px;height:20px;accent-color:var(--ins);flex:none}
+.ck.off{color:var(--muted)}
+.more-t{all:unset;cursor:pointer;color:var(--ins);font-size:.875rem;padding:.5rem 0}
+.tags{display:flex;flex-wrap:wrap;gap:.4rem}
+.tag{font-size:.8125rem;background:var(--ins-bg);color:var(--ins-deep);border-radius:6px;padding:.25rem .3rem .25rem .55rem;display:inline-flex;align-items:center;gap:.15rem}
+.tag button{all:unset;cursor:pointer;color:var(--muted);padding:0 .3rem;font-size:.9rem;line-height:1}
+.tag-add{display:flex;gap:.4rem;margin-top:.5rem}
+.tag-add input{padding:.45rem .7rem;border-radius:8px;font-size:.875rem}
+.tag-add button{white-space:nowrap;font:inherit;font-size:.875rem;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:8px;padding:0 .8rem;cursor:pointer}
+.sec-k{display:block;font-size:.8125rem;color:var(--muted);margin-bottom:.5rem}
+.tl-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;border-bottom:1px solid var(--rule);padding-bottom:.9rem;margin-top:.5rem}
+.tl-head h1{margin:0;font-size:1.4rem}
+.tl-head a{font-size:.875rem;font-weight:600;text-decoration:none;white-space:nowrap}
+.tl-sub{font-size:.8125rem;color:var(--muted);margin:.5rem 0 0}
+.tl-sub a{color:var(--muted)}
+.tl h2{font-size:.875rem;font-weight:600;margin:1.5rem 0 .25rem;color:var(--muted)}
+.tl h2.soon{color:var(--del)}
+.ev{display:grid;grid-template-columns:3.5rem minmax(0,1fr);gap:.75rem;padding:.9rem 0;border-bottom:1px solid var(--rule);color:var(--ink);text-decoration:none}
+.ev .d{display:flex;flex-direction:column;font-size:.9375rem;font-weight:600;font-variant-numeric:tabular-nums}
+.ev .d.past{color:var(--muted)}
+.ev .d small{font-size:.75rem;color:var(--del);font-weight:600}
+.ev .t{font:500 1rem/1.45 "Noto Serif KR",serif;word-break:keep-all}
+.ev .m{font-size:.8125rem;color:var(--muted);margin-top:.2rem}
+.ev .w{font-size:.75rem;color:var(--ins);margin-top:.2rem}
+a.ev:hover .t{text-decoration:underline;text-decoration-color:var(--ins)}
+.empty{color:var(--muted);padding:1rem 0;font-size:.9375rem}
+.scope{display:flex;flex-direction:column;gap:.3rem;margin-top:1.5rem;padding:.9rem 1rem;background:var(--card);border:1px solid var(--rule);border-radius:12px;font-size:.8125rem;line-height:1.6;color:var(--muted)}
+.scope b{color:var(--ink);font-weight:600}
+details.weak{margin-top:1.25rem}details.weak summary{cursor:pointer;color:var(--muted);font-size:.875rem;padding:.5rem 0}
+.morebtn{all:unset;cursor:pointer;color:var(--ins);font-size:.9375rem;padding:.9rem 0}
+.radio2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.radio2 label{display:flex;align-items:center;gap:.6rem;min-height:48px;padding:0 .9rem;background:var(--card);border:1px solid var(--rule);border-radius:12px;font-size:.9375rem}
+.radio2 label:has(input:checked){border:1.5px solid var(--ins)}
+.radio2 label.dis{color:var(--muted)}
+.radio2 input{accent-color:var(--ins);width:18px;height:18px}
+.when2 label{display:flex;justify-content:space-between;align-items:center;gap:1rem;min-height:52px;border-bottom:1px solid var(--rule);font-size:.9375rem}
+.when2 label:last-child{border-bottom:0}
+.when2 input{accent-color:var(--ins);width:20px;height:20px}
+.when2 small{color:var(--muted);font-size:.75rem}
+.bubble{align-self:flex-start;max-width:22rem;background:var(--card);border:1px solid var(--rule);border-radius:4px 16px 16px 16px;padding:.75rem .9rem;font-size:.875rem;line-height:1.55;display:flex;flex-direction:column;gap:.35rem}
+.bubble b{font-weight:600}
+.bubble span.l{color:var(--ins)}
+.ok{background:var(--ins-bg);border-radius:12px;padding:1rem;font-size:.9375rem;margin-top:1rem}
+/* 보조 화면: 이번 주 전국 · 물어보기 */
+h2.s{font:700 1.15rem/1.4 "Noto Serif KR",serif;margin:2rem 0 .25rem}
+.note{color:var(--muted);font-size:.875rem;margin:0 0 .75rem}
+ol.list{list-style:none;margin:0;padding:0}
+.item{display:grid;grid-template-columns:3.5rem 1fr;gap:.25rem .75rem;padding:.9rem 0;border-top:1px solid var(--rule)}
+.item .when{color:var(--muted);font-size:.875rem;font-variant-numeric:tabular-nums}
+.item .name{font:500 1rem/1.5 "Noto Serif KR",serif;word-break:keep-all}
+.item .name a{color:var(--ink);text-decoration:none}
+.item .meta{display:flex;flex-wrap:wrap;gap:.3rem .7rem;color:var(--muted);font-size:.8125rem}
+.item .line{margin:.35rem 0 0;font-size:.9rem;word-break:keep-all}
+.askf{display:flex;gap:.5rem}
+.askf input{flex:1;min-width:0;border:1.5px solid var(--ink);border-radius:10px}
+.askf button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:0 1rem;background:var(--ink);color:var(--paper);cursor:pointer;min-height:44px}
+.ans{border:1px solid var(--rule);border-radius:12px;padding:1rem 1.1rem;margin-top:1rem;background:var(--card)}
+.ans .kind{font-size:.8125rem;color:var(--muted)}
+.ans p{margin:.4rem 0}
+.ans ul{margin:.5rem 0 0;padding-left:1.1rem}
+footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="#/">법레이더</a>
+
+  <!-- 1. 상황 입력 -->
+  <section id="v-main" hidden>
+    <h1>내 일과 관련된 규칙이 바뀌면 먼저 알려 드려요</h1>
+    <p class="lede">법령, 고시, 우리 동네 조례 중에서 나에게 해당하는 변화만 골라 <del>바뀌기 전</del><span class="arrow">→</span><ins>바뀐 뒤</ins>로 보여 줍니다.</p>
+    <form id="sitf">
+      <label class="lbl" for="sit">어떤 상황이세요?</label>
+      <textarea id="sit" maxlength="300" placeholder="예: 화성 제부도에서 펜션을 운영하고 있어요. 손님은 주로 숙박 앱으로 받고, 장 보러 차를 자주 써요."></textarea>
+      <p class="hint">사는 곳, 하는 일, 신경 쓰이는 것을 편하게 적어 주세요.</p>
+      <span class="hint" style="display:block;margin-top:1.25rem">이렇게 적어도 돼요</span>
+      <div class="chips" id="chips">
+        <button type="button" class="chip">화성 제부도에서 펜션을 운영하고, 손님은 숙박 앱으로 받아요</button>
+        <button type="button" class="chip">동탄에서 카페를 해요</button>
+        <button type="button" class="chip">아이 키우는 부산 시민이에요</button>
+        <button type="button" class="chip">수원에 집 한 채 있고 갈아타기를 고민 중이에요</button>
+      </div>
+      <p class="err" id="sit-err" hidden></p>
+      <div class="resume" id="resume" hidden><span id="resume-t"></span><a href="#/timeline">내 타임라인 →</a></div>
+      <div class="grow"></div>
+      <button class="cta" id="sit-go" type="submit" style="margin-top:2rem">내 맞춤 피드 만들기</button>
+      <a class="sub" href="#/profile?manual=1">분야를 직접 고를게요</a>
+    </form>
+    <div class="other">다른 방법으로 보기 · <a href="#/week">이번 주 전국 변화</a><a href="r/">지역별 조례</a><a href="#/ask">바뀐 것 물어보기</a><a href="guide.html">법은 이렇게 생겼어요</a></div>
+  </section>
+
+  <!-- 2. 이렇게 이해했어요 -->
+  <section id="v-profile" hidden>
+    <a class="back" href="#/">← 다시 적기</a>
+    <h1 class="sm" id="pf-h">이렇게 이해했어요</h1>
+    <p class="lede" id="pf-lede" style="margin-bottom:1.25rem">틀린 곳은 고쳐 주세요. 이 설정으로 매일 변화를 골라요.</p>
+    <div class="card">
+      <span class="k">지역</span>
+      <div class="row2"><select id="pf-sido" aria-label="시·도"><option value="">시·도</option></select><select id="pf-sgg" aria-label="시·군·구"><option value="">시·군·구</option></select></div>
+      <span class="hint" id="pf-sido-note" style="margin:0"></span>
+      <span class="k">하는 일</span>
+      <input type="text" id="pf-job" maxlength="60" placeholder="예: 숙박업 (펜션) · 소상공인" style="padding:.55rem .7rem;border-radius:8px">
+    </div>
+    <fieldset>
+      <legend>챙겨 볼 분야</legend>
+      <div id="pf-ints"></div>
+      <button type="button" class="more-t" id="pf-more">+ 다른 분야도 보기</button>
+    </fieldset>
+    <div>
+      <span class="sec-k">이 법령들을 지켜볼게요</span>
+      <div class="tags" id="pf-laws"></div>
+      <div class="tag-add"><input type="text" id="pf-law-in" placeholder="법령 이름 추가 (예: 근로기준법)" aria-label="지켜볼 법령 추가"><button type="button" id="pf-law-add">추가</button></div>
+    </div>
+    <div style="margin-top:1.25rem">
+      <span class="sec-k">이 낱말이 들어간 변경도 볼게요</span>
+      <div class="tags" id="pf-kws"></div>
+      <div class="tag-add"><input type="text" id="pf-kw-in" placeholder="낱말 추가 (예: 주차)" aria-label="관심 낱말 추가"><button type="button" id="pf-kw-add">추가</button></div>
+    </div>
+    <div class="grow"></div>
+    <button class="cta" id="pf-go" type="button" style="margin-top:2rem">최근 한 달 변화 보기</button>
+  </section>
+
+  <!-- 3. 내 타임라인 -->
+  <section id="v-timeline" class="tl" hidden>
+    <div class="tl-head"><h1>내 타임라인</h1><a href="#/alerts">알림 받기</a></div>
+    <p class="tl-sub"><span id="tl-sub"></span> · <a href="#/profile">조건 바꾸기</a></p>
+    <div id="tl-body"></div>
+  </section>
+
+  <!-- 4. 알림 받기 -->
+  <section id="v-alerts" hidden>
+    <a class="back" href="#/timeline">← 타임라인</a>
+    <h1 class="sm">바뀌면 알려 드릴게요</h1>
+    <form id="alf">
+      <fieldset>
+        <legend>받는 곳</legend>
+        <div class="radio2">
+          <label><input type="radio" name="ch" value="email" checked> 이메일</label>
+          <label class="dis"><input type="radio" name="ch" value="telegram" disabled> 텔레그램 · 준비 중</label>
+        </div>
+        <input type="email" id="al-email" required placeholder="이메일 주소" autocomplete="email" style="margin-top:.6rem">
+      </fieldset>
+      <fieldset class="when2">
+        <legend>언제</legend>
+        <label>새 변경이 나오면 그날 아침<input type="checkbox" name="daily" checked></label>
+        <label>매주 월요일 한 주 정리<input type="checkbox" name="weekly" checked></label>
+        <label>시행 7일 전 한 번 더<input type="checkbox" name="before" checked></label>
+        <label style="color:var(--muted)">입법예고 의견 마감 전 <small>(준비 중)</small><input type="checkbox" name="notice" disabled></label>
+      </fieldset>
+      <div id="al-prev-wrap" hidden>
+        <span class="sec-k">이렇게 와요</span>
+        <div class="bubble" id="al-prev"></div>
+      </div>
+      <p class="err" id="al-err" hidden></p>
+      <div class="ok" id="al-ok" hidden></div>
+      <div class="grow"></div>
+      <button class="cta" id="al-go" type="submit" style="margin-top:2rem">이메일로 알림 받기</button>
+      <p class="hint" style="text-align:center">알림 발송은 곧 시작해요. 지금 신청하면 첫 알림부터 받아요.</p>
+    </form>
+  </section>
+
+  <!-- 보조: 이번 주 전국 -->
+  <section id="v-week" hidden>
+    <a class="back" href="#/">← 처음으로</a>
+    <div id="brief"></div>
+  </section>
+
+  <!-- 보조: 물어보기 -->
+  <section id="v-ask" hidden>
+    <a class="back" href="#/">← 처음으로</a>
+    <h1 class="sm">바뀐 것 물어보기</h1>
+    <p class="lede">바뀐 내용을 찾아 알려 드려요. 내 경우에 해당하는지는 판단하지 않아요.</p>
+    <form class="askf" id="askf">
+      <input type="text" id="askq" maxlength="300" placeholder="예: 일시적 2주택 비과세 바뀌었나요?" aria-label="질문" autocomplete="off">
+      <button type="submit">물어보기</button>
+    </form>
+    <div id="ans" aria-live="polite"></div>
+  </section>
+
+  <footer>자료: 국가법령정보센터 공동활용 API. 자동으로 정리한 내용이라 빠지거나 틀릴 수 있어요. 중요한 결정 전에는 원문을 확인하세요.</footer>
+</main>
+<script src="match.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const {md, ymd} = LR;
+const TODAY = LR.today();
+async function getJSON(u){ const r = await fetch(u, {cache:"no-cache"}); if (!r.ok) throw new Error(u); return r.json(); }
+
+let API = "", REGIONS = [], VOCAB_T = [], TL = null, DRAFT = null;
+const cfg = getJSON("config.json").then(c => { API = (c.ask || "").replace(/\/ask$/, ""); }).catch(() => {});
+const regions = getJSON("regions.json").then(r => { REGIONS = r; }).catch(() => {});
+const topicsP = getJSON("api/topics.json").then(t => { VOCAB_T = t; }).catch(() => {});
+const tlP = () => TL ? Promise.resolve(TL) : getJSON("api/timeline.json").then(d => {
+  TL = {...d, rows: d.rows.map(r => Object.fromEntries(d.cols.map((k, i) => [k, r[i]])))}; return TL;
+});
+
+// ── 화면 전환 ─────────────────────────────────────────────
+const VIEWS = ["main", "profile", "timeline", "alerts", "week", "ask"];
+function route(){
+  const [path, qs] = location.hash.replace(/^#\/?/, "").split("?");
+  let v = VIEWS.includes(path) ? path : "main";
+  if ((v === "timeline" || v === "alerts") && !LR.load()) v = "main";
+  VIEWS.forEach(x => $("#v-" + x).hidden = x !== v);
+  document.title = {main:"법레이더 — 내 일과 관련된 규칙이 바뀌면 먼저 알려 드려요", profile:"조건 확인 | 법레이더", timeline:"내 타임라인 | 법레이더", alerts:"알림 받기 | 법레이더", week:"이번 주 전국 변화 | 법레이더", ask:"바뀐 것 물어보기 | 법레이더"}[v];
+  ({main: showMain, profile: () => showProfile(new URLSearchParams(qs || "")), timeline: showTimeline, alerts: showAlerts, week: brief, ask: () => {}})[v]();
+  window.scrollTo(0, 0);
+}
+addEventListener("hashchange", route);
+
+// ── 1. 상황 입력 ──────────────────────────────────────────
+function showMain(){
+  const p = LR.load();
+  $("#resume").hidden = !p;
+  if (p) $("#resume-t").textContent = `${p.who || "내 조건"}${p.region ? " · " + p.region : ""}`;
+  if (p && p.text && !$("#sit").value) $("#sit").value = p.text;
+}
+$("#chips").addEventListener("click", e => { if (e.target.matches(".chip")) { $("#sit").value = e.target.textContent; $("#sit").focus(); } });
+$("#sitf").addEventListener("submit", async e => {
+  e.preventDefault();
+  const text = $("#sit").value.trim(), err = $("#sit-err"), btn = $("#sit-go");
+  err.hidden = true;
+  if (text.length < 4) { err.textContent = "상황을 한두 문장 적어 주세요."; err.hidden = false; return; }
+  await cfg;
+  if (!API) { err.textContent = "지금은 자동 정리를 쓸 수 없어요. '분야를 직접 고를게요'로 진행해 주세요."; err.hidden = false; return; }
+  btn.disabled = true; btn.textContent = "상황을 정리하는 중…";
+  try {
+    const r = await fetch(API + "/profile", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({text})});
+    const o = await r.json();
+    if (!r.ok) throw new Error(o.error || "오류");
+    DRAFT = o.profile;
+    location.hash = "#/profile";
+  } catch (x) {
+    err.textContent = x.message || "잠시 후 다시 시도해 주세요."; err.hidden = false;
+  } finally { btn.disabled = false; btn.textContent = "내 맞춤 피드 만들기"; }
+});
+
+// ── 2. 이렇게 이해했어요 ───────────────────────────────────
+let PF = null;
+async function showProfile(qs){
+  await Promise.all([regions, topicsP]);
+  if (qs.get("manual")) PF = {who:"", region:null, sido:null, job:"", interests:[], laws:[], keywords:[], text:""};
+  else PF = structuredClone(DRAFT || LR.load() || {who:"", region:null, sido:null, job:"", interests:[], laws:[], keywords:[], text:""});
+  DRAFT = null;
+  const manual = !PF.text;
+  $("#pf-h").textContent = manual ? "무엇을 챙겨 볼까요?" : "이렇게 이해했어요";
+  $("#pf-lede").textContent = manual ? "사는 곳과 분야를 골라 주세요. 이 설정으로 매일 변화를 골라요." : "틀린 곳은 고쳐 주세요. 이 설정으로 매일 변화를 골라요.";
+  // 지역
+  const sidos = [...new Set(REGIONS.map(r => r.sido))];
+  $("#pf-sido").innerHTML = `<option value="">시·도 (선택 안 함)</option>` + sidos.map(s => `<option>${esc(s)}</option>`).join("");
+  $("#pf-sido").value = PF.sido || "";
+  fillSgg();
+  $("#pf-sgg").value = PF.region && PF.region !== PF.sido ? PF.region : "";
+  sidoNote();
+  $("#pf-job").value = PF.job || "";
+  drawInts(manual);
+  drawTags("laws"); drawTags("keywords");
+}
+function fillSgg(){
+  const s = $("#pf-sido").value, sub = REGIONS.filter(r => r.sido === s && r.org !== s);
+  $("#pf-sgg").innerHTML = `<option value="">${s ? "시·군·구 (시·도 전체)" : "시·군·구"}</option>` + sub.map(r => `<option value="${esc(r.org)}">${esc(r.org.split(" ").slice(1).join(" "))}</option>`).join("");
+  $("#pf-sgg").disabled = !sub.length;
+}
+function sidoNote(){
+  const s = $("#pf-sido").value, g = $("#pf-sgg").value;
+  $("#pf-sido-note").textContent = g ? `${g.split(" ").slice(1).join(" ")} 조례 + ${s} 조례를 챙겨요` : s ? `${s} 조례를 챙겨요` : "지역을 고르면 우리 동네 조례도 챙겨요";
+}
+$("#pf-sido").onchange = () => { fillSgg(); sidoNote(); };
+$("#pf-sgg").onchange = sidoNote;
+let SHOW_ALL_T = false;
+function drawInts(manual){
+  const have = new Set(PF.interests.map(i => i.topic));
+  const rest = VOCAB_T.filter(t => !have.has(t.id));
+  const all = [...PF.interests, ...((SHOW_ALL_T || manual) ? rest.map(t => ({label: t.name, topic: t.id, on: false, extra: true})) : [])];
+  $("#pf-ints").innerHTML = all.map((it, i) => `<label class="ck ${it.on ? "" : "off"}"><input type="checkbox" data-i="${i}" ${it.on ? "checked" : ""}> ${esc(it.label)}</label>`).join("")
+    || `<p class="empty" style="padding:.25rem 0">아래에서 분야를 골라 주세요.</p>`;
+  $("#pf-ints").onchange = e => {
+    const it = all[+e.target.dataset.i]; it.on = e.target.checked;
+    if (it.extra && it.on && !PF.interests.includes(it)) { delete it.extra; PF.interests.push(it); }
+    e.target.parentElement.classList.toggle("off", !it.on);
+  };
+  $("#pf-more").hidden = SHOW_ALL_T || manual || !rest.length;
+}
+$("#pf-more").onclick = () => { SHOW_ALL_T = true; drawInts(false); };
+function drawTags(k){
+  const el = $(k === "laws" ? "#pf-laws" : "#pf-kws");
+  el.innerHTML = PF[k].map((x, i) => `<span class="tag">${esc(x)}<button type="button" aria-label="${esc(x)} 빼기" data-i="${i}">×</button></span>`).join("")
+    || `<span class="hint" style="margin:0">${k === "laws" ? "아직 없어요" : "아직 없어요"}</span>`;
+  el.onclick = e => { if (e.target.dataset.i != null) { PF[k].splice(+e.target.dataset.i, 1); drawTags(k); } };
+}
+function addTag(k, inp){
+  const v = $(inp).value.trim().replace(/\s*(시행령|시행규칙)$/, "").replace(/[·・]/g, k === "laws" ? "ㆍ" : "·");
+  if (v.length >= 2 && !PF[k].includes(v)) { PF[k].push(v); drawTags(k); }
+  $(inp).value = "";
+}
+$("#pf-law-add").onclick = () => addTag("laws", "#pf-law-in");
+$("#pf-kw-add").onclick = () => addTag("keywords", "#pf-kw-in");
+$("#pf-law-in").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); addTag("laws", "#pf-law-in"); } };
+$("#pf-kw-in").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); addTag("keywords", "#pf-kw-in"); } };
+$("#pf-go").onclick = () => {
+  const s = $("#pf-sido").value, g = $("#pf-sgg").value;
+  PF.sido = s || null; PF.region = g || s || null; PF.job = $("#pf-job").value.trim();
+  PF.interests = PF.interests.filter(i => !i.extra);
+  if (!PF.region && !PF.interests.some(i => i.on) && !PF.laws.length && !PF.keywords.length) { alertMsg("지역이나 분야를 하나 이상 골라 주세요."); return; }
+  if (!PF.who) PF.who = PF.job || (PF.region ? PF.region.split(" ").pop() + " 주민" : "나");
+  LR.save(PF); location.hash = "#/timeline";
+};
+function alertMsg(t){ const b = $("#pf-go"); const o = b.textContent; b.textContent = t; setTimeout(() => b.textContent = o, 2200); }
+
+// ── 3. 내 타임라인 ─────────────────────────────────────────
+let TL_LIMIT = 30;
+async function showTimeline(){
+  const p = LR.load(), body = $("#tl-body");
+  body.innerHTML = `<p class="empty">불러오는 중…</p>`;
+  let d;
+  try { d = await tlP(); } catch (e) { body.innerHTML = `<p class="empty">아직 자료를 불러올 수 없어요.</p>`; return; }
+  const hits = [];
+  for (const r of d.rows) { const m = LR.match(r, p); if (m) hits.push({...r, m}); }
+  const since30 = new Date(Date.parse(TODAY) - 30 * 864e5).toISOString().slice(0, 10);
+  // 분명한 이유(지역·지켜보는 법령·낱말·분야 팩)가 있는 것이 본문, 분야만 겹치는 것은 아래 접어 둠
+  const weak = hits.filter(r => !r.m.strong).sort((a, b) => b.announced.localeCompare(a.announced));
+  const strong = hits.filter(r => r.m.strong);
+  const soon = strong.filter(r => r.effective > TODAY).sort((a, b) => a.effective.localeCompare(b.effective));
+  const recent = strong.filter(r => !(r.effective > TODAY)).sort((a, b) => b.announced.localeCompare(a.announced));
+  const n30 = strong.filter(r => r.announced >= since30).length;
+  $("#tl-sub").textContent = `지난 30일 변경 ${d.total30.toLocaleString()}건 중 ${p.who || "나"}께 해당하는 ${n30}건`;
+  const ev = (r, when) => {
+    const href = r.page || r.url, ext = !r.page;
+    const dd = LR.dday(r.effective, TODAY);
+    const date = when === "soon" ? `<div class="d">${md(r.effective)}${dd ? `<small>${dd}</small>` : ""}</div>` : `<div class="d past">${md(r.announced)}</div>`;
+    const meta = [r.title ? r.name : (r.kind === "ordin" ? r.org : r.type), r.change === "제정" ? "새로 생김" : r.change,
+      when === "soon" ? `${ymd(r.announced)} 공포` : (r.effective && r.effective !== r.announced ? `${ymd(r.effective)} 시행` : "")].filter(Boolean).join(" · ");
+    return `<a class="ev" href="${esc(href)}"${ext ? ' target="_blank" rel="noopener"' : ""}>${date}<div>
+      <div class="t">${esc(r.title || r.name)}</div>
+      <div class="m">${esc(meta)}</div><div class="w">${esc(r.m.why.slice(0, 2).join(" · "))}</div></div></a>`;
+  };
+  const soonList = soon.slice(0, 12);
+  body.innerHTML =
+    (soonList.length ? `<h2 class="soon">곧 시행</h2>${soonList.map(r => ev(r, "soon")).join("")}` : "") +
+    `<h2>최근 바뀜</h2>` + (recent.slice(0, TL_LIMIT).map(r => ev(r, "recent")).join("") || `<p class="empty">최근 90일 동안 조건에 맞는 변경이 없어요. 조건을 넓혀 보세요.</p>`) +
+    (recent.length > TL_LIMIT ? `<button class="morebtn" id="tl-more">더 보기 (${recent.length - TL_LIMIT}건)</button>` : "") +
+    (weak.length ? `<details class="weak"><summary>분야만 겹치는 변경 ${weak.length}건</summary>${weak.slice(0, 40).map(r => ev(r, r.effective > TODAY ? "soon" : "recent")).join("")}</details>` : "") +
+    `<h2>의견 받는 중</h2><p class="empty" style="padding-top:.25rem">입법예고를 연결하면 시행 전에 의견을 낼 수 있는 개정안이 여기 나와요. (준비 중)</p>
+    <div class="scope"><b>법레이더가 보는 범위</b><span>법령·행정규칙·자치법규(조례)만 봐요. 입법예고·판례·해석례는 아직이에요. 국가법령정보센터 등록이 늦으면 며칠 뒤에 뜨기도 해요. 여기 없다고 안 바뀐 것은 아니에요.</span></div>`;
+  const mb = $("#tl-more"); if (mb) mb.onclick = () => { TL_LIMIT += 30; showTimeline(); };
+}
+
+// ── 4. 알림 받기 ───────────────────────────────────────────
+async function showAlerts(){
+  $("#al-ok").hidden = true; $("#al-err").hidden = true;
+  const p = LR.load();
+  try {
+    const d = await tlP();
+    const s = d.rows.filter(r => r.effective > TODAY && LR.match(r, p)).sort((a, b) => a.effective.localeCompare(b.effective))[0];
+    if (s) {
+      $("#al-prev").innerHTML = `<b>시행 7일 전 · ${+s.effective.slice(5,7)}월 ${+s.effective.slice(8,10)}일부터</b><span>${esc(s.title || s.name)}</span><span class="l">${esc(s.name)} 보기</span>`;
+      $("#al-prev-wrap").hidden = false;
+    }
+  } catch (e) {}
+}
+$("#alf").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = new FormData($("#alf")), err = $("#al-err"), btn = $("#al-go");
+  err.hidden = true; await cfg;
+  if (!API) { err.textContent = "지금은 신청을 받을 수 없어요. 잠시 후 다시 시도해 주세요."; err.hidden = false; return; }
+  btn.disabled = true;
+  try {
+    const prefs = {daily: f.has("daily"), weekly: f.has("weekly"), before: f.has("before")};
+    const r = await fetch(API + "/subscribe", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({email: $("#al-email").value, prefs, profile: LR.load()})});
+    const o = await r.json();
+    if (!r.ok) throw new Error(o.error || "오류");
+    $("#al-ok").innerHTML = `신청됐어요. 알림 발송을 시작하면 <b>${esc($("#al-email").value)}</b>로 지금 조건에 맞는 변화를 보내 드려요.`;
+    $("#al-ok").hidden = false;
+  } catch (x) { err.textContent = x.message || "잠시 후 다시 시도해 주세요."; err.hidden = false; }
+  finally { btn.disabled = false; }
+});
+
+// ── 보조: 이번 주 전국 ─────────────────────────────────────
+let PAGES = new Set();
+const pagesP = getJSON("pages.json").then(k => { PAGES = new Set(k); }).catch(() => {});
+const pageOf = x => x.key && PAGES.has(x.key) ? `c/${x.key.replace(":", "-")}.html` : null;
+function marks(line){
+  return esc(line).split(" · ").map(part => {
+    const m = part.match(/^(.*?: )?(.+?) → ([^→]+)$/);
+    return m ? `${m[1] || ""}<del>${m[2]}</del><span class="arrow">→</span><ins>${m[3]}</ins>` : part;
+  }).join("<br>");
+}
+function item(x){
+  const own = pageOf(x), link = own ? `href="${own}"` : `href="${esc(x.url)}" target="_blank" rel="noopener"`;
+  const tags = [x.change === "제정" ? "새로 만듦" : x.change, x.title ? x.name : (x.kind === "ordin" ? x.org : x.type)];
+  if (x.effective && x.effective !== x.announced) tags.push(`${md(x.effective)} 시행`);
+  return `<li class="item"><div class="when">${md(x.announced)}</div><div><div class="name"><a ${link}>${esc(x.title || x.name)}</a></div>
+    <div class="meta">${tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>${x.line ? `<p class="line">${marks(x.line)}</p>` : ""}</div></li>`;
+}
+async function brief(){
+  await pagesP;
+  try {
+    const d = await getJSON("api/digest/national.json"), g = d.latest, c = g.counts;
+    $("#brief").innerHTML = `<h1 class="sm">${md(g.start)} ~ ${md(g.end)}, 전국에서 바뀐 것</h1>
+      <p class="lede">내 상황과 상관없이 이번 주 공포된 생활 법령이에요. <a href="#/">내 상황에 맞춰 보기</a></p>` +
+      (g.packs || []).map(p => `<h2 class="s">${esc(p.name)}</h2><p class="note">${p.items.length}건</p><ol class="list">${p.items.map(x => item({...x, line: (x.points || []).join(" · ")})).join("") || `<li class="empty">이번 주에 바뀐 것이 없어요.</li>`}</ol>`).join("") +
+      `<h2 class="s">생활에 영향 있는 법령</h2><p class="note">이번 주 공포 ${c.law}건 중 ${c.law_shown}건 · 후속 정비·내부 행정 ${c.law_noise}건 뺌</p>
+      <ol class="list">${g.laws.map(item).join("")}</ol>` +
+      (g.soon.length ? `<h2 class="s">2주 안에 시행</h2><ol class="list">${g.soon.map(item).join("")}</ol>` : "") +
+      (c.ordin_regions ? `<p class="note" style="margin-top:1.5rem">이번 주 조례·규칙이 바뀐 지역 ${c.ordin_regions}곳 — <a href="r/">지역별 조례</a></p>` : "");
+  } catch (e) { $("#brief").innerHTML = `<p class="empty">아직 만든 브리핑이 없어요.</p>`; }
+}
+
+// ── 보조: 물어보기 ─────────────────────────────────────────
+const KIND_LABEL = {change: "바뀐 내용", current: "최근 변경 기준 안내", judgment: "개인 판단은 하지 않아요 · 관련 변화", out_of_scope: "안내"};
+$("#askf").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const q = $("#askq").value.trim(); await cfg; if (q.length < 2 || !API) return;
+  const box = $("#ans"), btn = $("#askf button");
+  btn.disabled = true; box.innerHTML = `<div class="ans"><span class="kind">찾는 중…</span></div>`;
+  try {
+    await pagesP;
+    const r = await fetch(API + "/ask", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({q})});
+    const o = await r.json();
+    if (!r.ok) throw new Error(o.error || "오류");
+    const items = (o.items || []).map(i => `<li><a href="${PAGES.has(i.key) ? esc(i.page) : esc(i.url)}">${esc(i.title || i.name)}</a>
+      <span class="kind">${i.title ? esc(i.name) + " · " : ""}${ymd(i.announced)} 공포${i.effective && i.effective !== i.announced ? ` · ${ymd(i.effective)} 시행` : ""}</span></li>`).join("");
+    box.innerHTML = `<div class="ans"><span class="kind">${esc(KIND_LABEL[o.type] || "")}</span><p>${esc(o.answer)}</p>${items ? `<ul>${items}</ul>` : ""}${o.notice ? `<p class="kind">${esc(o.notice)}</p>` : ""}</div>`;
+  } catch (e) {
+    box.innerHTML = `<div class="ans"><p>${esc(e.message || "잠시 후 다시 시도해 주세요")}</p></div>`;
+  } finally { btn.disabled = false; }
+});
+
+route();
+</script>
+</body>
+</html>

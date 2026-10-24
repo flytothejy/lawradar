@@ -1,0 +1,41 @@
+name: bench
+
+# 모델 비교 시험 — 같은 표본을 여러 모델로 정리해 검증 통과율·비용 비교 (화면 데이터는 바꾸지 않음)
+on:
+  workflow_dispatch:
+    inputs:
+      models:
+        description: "쉼표로 구분 (gemini-* 는 Secret GEMINI_API_KEY 필요)"
+        default: "claude-sonnet-5-5,claude-haiku-5-5"
+      n:
+        description: "표본 수"
+        default: "50"
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - run: python -m lcf sync pull
+      - run: python -m lcf bench --models "${{ inputs.models }}" --n ${{ inputs.n }}
+      - name: 결과를 R2에 (lcf/bench/)
+        run: python -c "from lcf import sync; import pathlib; d=pathlib.Path('data/lcf'); sync.put([p.relative_to(d).as_posix() for p in (d/'bench').rglob('*') if p.is_file()])"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench
+          path: data/lcf/bench/

@@ -1,0 +1,31 @@
+name: probe
+
+# 법령 API 응답 구조 보기 — 등록 IP에서만 호출되므로 여기서 실행 (예: 부칙·조문 이력 키 확인)
+on:
+  workflow_dispatch:
+    inputs:
+      cmds:
+        description: "한 줄에 하나, 'python -m lcf probe' 뒤에 붙일 인자 (;로 구분)"
+        default: "service law MST=290841"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ${{ vars.LCF_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    env:
+      LAW_OC: ${{ secrets.LAW_OC }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - name: probe
+        env:
+          CMDS: ${{ inputs.cmds }}
+        run: |
+          IFS=';' read -ra C <<< "$CMDS"
+          for c in "${C[@]}"; do echo "===== $c"; python -m lcf probe $c || true; done

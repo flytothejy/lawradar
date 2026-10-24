@@ -1,0 +1,21 @@
+# 배포 때 worker.yml이 __ACCOUNT__·__BUCKET__·__KV__를 채워 wrangler.toml로 만듦 (wrangler.toml은 커밋하지 않음)
+name = "lcf-ask"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+account_id = "__ACCOUNT__"
+workers_dev = true
+
+[vars]
+ALLOW_ORIGIN = "https://flytothejy.github.io"
+DAILY_PER_IP = "20"
+DAILY_TOTAL = "300"
+MODEL_CLASSIFY = "claude-haiku-5-5"
+MODEL_ANSWER = "claude-sonnet-5-5"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "__BUCKET__"
+
+[[kv_namespaces]]
+binding = "LIMITS"
+id = "__KV__"

@@ -1,0 +1,43 @@
+name: digest
+
+# 주간 다이제스트 — 지난 7일(월~일) 공포·발령분을 프로필별로 요약해 텔레그램
+on:
+  schedule:
+    - cron: "55 22 * * 0"     # 한국 월요일 07:55 (daily 07:40 다음)
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "프로필 id (비우면 전체)"
+        default: ""
+      notify:
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lcf-data
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest      # 법령 API를 부르지 않으므로 어디서나 됨
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - run: python -m lcf sync pull
+      - name: digest
+        run: python -m lcf digest ${{ inputs.profile }} ${{ (github.event_name != 'schedule' && !inputs.notify) && '--no-notify' || '' }}
+      - run: python -m lcf build
+      - run: python -m lcf sync push
