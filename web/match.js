@@ -21,22 +21,42 @@
     const text = `${r.name} ${r.title || ""}`;
     const kw = (p.keywords || []).find((k) => text.includes(k));
     if (r.kind === "ordin") {
-      if (p.region && r.org === p.region) return { why: [p.region === p.sido ? `${p.sido} 조례` : `우리 동네(${short(p.region)}) 조례`], strong: true };
+      const local = { id: "local", label: `우리 동네 · ${short(p.region || p.sido)}` };
+      if (p.region && r.org === p.region) return { why: [p.region === p.sido ? `${p.sido} 조례` : `우리 동네(${short(p.region)}) 조례`], strong: true, area: local, kw: null };
       if (p.sido && r.org === p.sido) {                     // 시·도 조례는 많아서 내 분야·낱말과 겹칠 때만
         const hit = kw ? `관심 낱말: ${kw}` : (on.find((x) => topics.includes(x.topic)) || {}).label;
-        return hit ? { why: [`${p.sido} 조례`, hit], strong: !!kw } : null;
+        return hit ? { why: [`${p.sido} 조례`, hit], strong: !!kw, area: local, kw: kw || null } : null;
       }
       return null;                                          // 다른 지역 조례는 보이지 않음
     }
-    if (r.base && (p.laws || []).includes(r.base)) { why.push(`지켜보는 법령: ${r.base}`); strong = true; }
-    if (kw) { why.push(`관심 낱말: ${kw}`); strong = true; }
+    let area = null;
     for (const it of on) {
-      if (packs.includes(it.topic)) { why.push(it.label); strong = true; continue; }
+      if (packs.includes(it.topic)) { why.push(it.label); strong = true; area = area || { id: it.topic, label: it.label }; continue; }
       // 분야만 겹칠 때는 생활에 닿는 것(AI가 정리했거나 중요 표시)만
-      if (topics.includes(it.topic) && (r.title || r.level === "high") && (r.kind !== "law" || +r.life || r.level === "high")) why.push(it.label);
+      if (topics.includes(it.topic) && (r.title || r.level === "high") && (r.kind !== "law" || +r.life || r.level === "high")) {
+        why.push(it.label); area = area || { id: it.topic, label: it.label };
+      }
     }
-    return why.length ? { why: [...new Set(why)], strong } : null;
+    if (r.base && (p.laws || []).includes(r.base)) { why.unshift(`지켜보는 법령: ${r.base}`); strong = true; area = area || { id: "laws", label: "지켜보는 법령" }; }
+    if (kw) { why.push(`관심 낱말: ${kw}`); strong = true; area = area || { id: "kw", label: "관심 낱말" }; }
+    return why.length ? { why: [...new Set(why)], strong, area, kw: kw || null } : null;
   };
+
+  // 쉬운 종류 표시 — 누가 바꾼 것인지 (guide.html '법은 이렇게 생겼어요'와 같은 말)
+  LR.kind = (r) => {
+    if (r.kind === "law") return r.type === "법률" ? { t: "국회가 바꾼 법", c: "b-law" } : { t: "정부 세부 기준", c: "b-dec" };
+    if (r.kind === "admrul") return { t: "부처 고시", c: "b-adm" };
+    const ty = r.type === "의회규칙" ? "의회 규칙" : r.type;
+    return { t: `${short(r.org)} ${ty}`, c: "b-loc" };
+  };
+  // 같은 법 묶음 — 법률·시행령·시행규칙은 base가 같고, 그 밖에는 이름이 같으면 한 식구
+  LR.fam = (r) => r.base || r.name;
+
+  // 관심 표시 — 이 기기에만 저장. {star:{key:시각}, hide:{key:1}, hideFam:{법령:1}, dropKw:[낱말]}
+  const FB = "lr-fb";
+  LR.fb = () => { try { return { star: {}, hide: {}, hideFam: {}, dropKw: [], ...JSON.parse(localStorage.getItem(FB) || "{}") }; } catch (e) { return { star: {}, hide: {}, hideFam: {}, dropKw: [] }; } };
+  LR.fbSave = (f) => { try { localStorage.setItem(FB, JSON.stringify(f)); } catch (e) {} };
+  LR.hidden = (r, f) => !!(f.hide[r.key] || f.hideFam[LR.fam(r)]);
 
   LR.dday = (d, today) => {
     if (!d) return null;
