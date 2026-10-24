@@ -89,8 +89,8 @@ jobs:
         run: |
           f=data/lcf/state/backlog_resume.json
           [ -f $f ] && python -c "import json,sys; sys.exit(0 if json.load(open('$f')).get('pending') else 1)" || exit 0
-          read minutes ref < <(python -c "import json; d=json.load(open('$f')); print(d['minutes'], d['ref'])")
-          gh workflow run backlog.yml --ref $ref -f minutes=$minutes
+          read minutes ref days max_usd < <(python -c "import json; d=json.load(open('$f')); print(d['minutes'], d['ref'], d.get('days', '730'), d.get('max_usd', '0'))")
+          gh workflow run backlog.yml --ref $ref -f minutes=$minutes -f days=$days -f max_usd=$max_usd
           echo '{"pending": false}' > $f
           python -c "from lcf import sync; sync.put(['state/backlog_resume.json'])"
       - name: notify failure

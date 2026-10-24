@@ -1,6 +1,11 @@
 """과거분 쉬운 말 정리 — 보강(부칙까지) → Haiku 배치 생성 → Sonnet 배치 전수 검토 → 저장. 끊겨도 이어서 함
 
-  python -m lcf backlog [--minutes 300] [--limit N] [--dry]
+  python -m lcf backlog [--minutes 300] [--limit N] [--days 730] [--max-usd 0] [--dry]
+  python -m lcf backlog --count            구간별(6개월·1년·1년 6개월·2년) 남은 건수와 예상 비용만 보기
+
+구간 (--days): 최근 N일 안 공포분만 다룸. 6개월(182) → 1년(365) → 1년 6개월(547) → 2년(730) 순서로 넓혀 가며
+실행하면 구간마다 비용을 따로 볼 수 있음. 앞 구간에서 끝낸 항목은 다시 하지 않음 (state의 windows에 구간별 누적)
+--max-usd: 이 구간에서 쓴 돈이 넘으면 새 묶음을 시작하지 않고 멈춤 (0이면 한도 없음)
 
 범위 (scope)
 - 법령·행정규칙(고시): 최근 2년, 정비(low) 제외 전부
@@ -28,6 +33,9 @@ from .core import DAYS, STATE, log, read_json, status, today, write_json
 STATE_F = STATE / "backlog.json"
 MODEL = os.environ.get("LCF_BACKLOG_MODEL") or "claude-haiku-5-5"
 CHUNK = 2000                       # 배치 하나에 넣을 항목 수
+DAYS_MAX = 730
+WINDOWS = [(182, "6개월"), (365, "1년"), (547, "1년 6개월"), (730, "2년")]
+PER_ITEM = 0.0035                  # 항목당 예상 비용(달러) — Haiku 배치 생성 + Sonnet 배치 검토 시험값
 B_API = "https://api.anthropic.com/v1/messages/batches"
 
 
@@ -35,7 +43,10 @@ def _h():
     return {"x-api-key": llm.key_for("claude"), "anthropic-version": "2023-06-01", "content-type": "application/json"}
 
 
-def in_scope(it, now):
+def in_scope(it, now, days=DAYS_MAX):
+    since = (now - dt.timedelta(days=days)).isoformat()
+    if it["announced"] < since:
+        return False
     if it["cls"]["level"] == "low":
         return False
     if it["kind"] == "admrul" and it["type"] != "고시":
@@ -48,20 +59,20 @@ def in_scope(it, now):
     return a >= (now - dt.timedelta(days=730)).isoformat()
 
 
-def _days(now):
-    since = (now - dt.timedelta(days=730)).isoformat()
+def _days(now, days=DAYS_MAX):
+    since = (now - dt.timedelta(days=days)).isoformat()
     return sorted((p for p in DAYS.glob("*.json") if p.stem >= since), reverse=True)
 
 
 # ── 1. 보강 ───────────────────────────────────────────────────────────
-def enrich(now, deadline):
+def enrich(now, deadline, days=DAYS_MAX):
     collect.ORDIN_SCOPE = "all"
     regions = collect.watched_regions()
     n = left = 0
     last_push = time.time()
-    for p in _days(now):
+    for p in _days(now, days):
         doc = read_json(p) or {}
-        todo = [it for it in doc.get("items", {}).values() if in_scope(reclassify(it), now) and collect.needs_enrich(it, regions)]
+        todo = [it for it in doc.get("items", {}).values() if in_scope(reclassify(it), now, days) and collect.needs_enrich(it, regions)]
         if not todo:
             continue
         for it in todo:
@@ -80,10 +91,9 @@ def enrich(now, deadline):
 
 
 # ── 2~4. 배치 ─────────────────────────────────────────────────────────
-def targets(now, limit=None, enriched_only=False, fails=None):
-    pl = [packs.load(i) for i in packs.all_ids()]
+def targets(now, limit=None, enriched_only=False, fails=None, days=DAYS_MAX):
     out = []
-    for p in _days(now):
+    for p in _days(now, days):
         for it in ((read_json(p) or {}).get("items") or {}).values():
             ai = it.get("ai") or {}
             retry = ai.get("problems") == ["생성 결과 없음"] and (fails or {}).get(it["key"], 0) < 2
@@ -92,7 +102,7 @@ def targets(now, limit=None, enriched_only=False, fails=None):
             if enriched_only and it["detail"].get("v", 1) < collect.DETAIL_V:
                 continue
             it = reclassify(it)
-            if in_scope(it, now) and llm.sources(it):
+            if in_scope(it, now, days) and llm.sources(it):
                 out.append(it["key"])
                 if limit and len(out) >= limit:
                     return out
@@ -155,13 +165,50 @@ def load_items(keys):
     return out
 
 
-def run(minutes=300, limit=None, dry=False):
+def count(now=None):
+    """구간별 남은 일 — 정리할 것(보강 끝남) · 보강부터 할 것 · 예상 비용. API 호출 없음"""
+    now = now or today()
+    regions = collect.watched_regions()
+    since = {d: (now - dt.timedelta(days=d)).isoformat() for d, _ in WINDOWS}
+    c = {d: {"ready": 0, "enrich": 0, "done": 0} for d, _ in WINDOWS}
+    for p in _days(now):
+        for it in ((read_json(p) or {}).get("items") or {}).values():
+            it = reclassify(it)
+            if not in_scope(it, now):
+                continue
+            if (it.get("ai") or {}).get("v") == llm.AI_V:
+                kind = "done"
+            elif collect.needs_enrich(it, regions):
+                kind = "enrich"
+            elif it.get("detail") and llm.sources(it):
+                kind = "ready"
+            else:
+                continue
+            for d, _ in WINDOWS:
+                if it["announced"] >= since[d]:
+                    c[d][kind] += 1
+    log("구간별 남은 일 (누적 — 짧은 구간이 긴 구간에 포함)")
+    prev = 0
+    for d, name in WINDOWS:
+        n = c[d]["ready"] + c[d]["enrich"]
+        log(f"  최근 {name:<6} ({since[d]}~): 정리 대상 {n}건 (보강 필요 {c[d]['enrich']}) · 이미 v2 {c[d]['done']}건 · "
+            f"예상 ${n * PER_ITEM:.0f} (이 구간에서 새로 ${(n - prev) * PER_ITEM:.0f})")
+        prev = n
+    return c
+
+
+def run(minutes=300, limit=None, dry=False, days=DAYS_MAX, max_usd=0.0):
     t0 = time.time()
     deadline = t0 + minutes * 60 - 15 * 60                 # 저장·올리기 시간 15분 남김
     now = today()
     st = read_json(STATE_F, {"stage": "enrich", "batches": [], "done": 0, "usd": 0.0})
+    if st.get("days") != days and not limit:                 # 구간이 바뀌면 보강부터 다시 (끝낸 항목은 건너뜀)
+        st["days"] = days
+        st["stage"] = "enrich"
+    win = st.setdefault("windows", {}).setdefault(str(days), {"done": 0, "usd": 0.0})
+    log(f"구간: 최근 {days}일 · 이 구간 누적 {win['done']}건 ${win['usd']:.2f}" + (f" · 한도 ${max_usd:.0f}" if max_usd else ""))
     if st["stage"] == "enrich" and not limit:                # 시험(--limit)은 보강을 건너뛰고 이미 보강된 것만
-        ok, _ = enrich(now, deadline)
+        ok, _ = enrich(now, deadline, days)
         if not ok:
             write_json(STATE_F, st, pretty=True); return 3
         st["stage"] = "gen"; write_json(STATE_F, st, pretty=True)
@@ -169,12 +216,16 @@ def run(minutes=300, limit=None, dry=False):
     while True:
         cur = st.get("cur")
         if not cur:                                          # 새 묶음 만들기
-            keys = targets(now, limit or CHUNK, enriched_only=bool(limit), fails=st.get("fails"))
+            if max_usd and win["usd"] >= max_usd:
+                write_json(STATE_F, st, pretty=True)
+                log(f"비용 한도 도달: 이 구간 ${win['usd']:.2f} ≥ ${max_usd:.0f} — 멈춤 (한도를 올려 다시 실행하면 이어 감)")
+                return 4
+            keys = targets(now, limit or CHUNK, enriched_only=bool(limit), fails=st.get("fails"), days=days)
             if limit:
                 keys = keys[:limit]
             if not keys:
                 st["stage"] = "done"; write_json(STATE_F, st, pretty=True)
-                log(f"과거분 정리 끝 · 누적 {st['done']}건 · 약 ${st['usd']:.2f}")
+                log(f"구간 {days}일 정리 끝 · 이 구간 {win['done']}건 ${win['usd']:.2f} · 전체 누적 {st['done']}건 ${st['usd']:.2f}")
                 return 0
             items = load_items(keys)
             reqs = [{"custom_id": _cid(k), "params": {"model": MODEL, "max_tokens": 6000, "system": llm.SYSTEM,
@@ -253,12 +304,15 @@ def run(minutes=300, limit=None, dry=False):
                     write_json(p, doc)
         st["done"] += len(made)
         st["usd"] = round(st["usd"] + gen_usd + rev_usd, 3)
+        win["done"] += len(made)
+        win["usd"] = round(win["usd"] + gen_usd + rev_usd, 3)
         st["cur"] = None
         st["batches"].append({"at": time.strftime("%Y-%m-%d %H:%M"), "n": len(cur["keys"]), "got": len(made), **stat,
-                              "usd": round(gen_usd + rev_usd, 3)})
+                              "usd": round(gen_usd + rev_usd, 3), "days": days})
         write_json(STATE_F, st, pretty=True)
-        status("backlog", stage=st["stage"], done=st["done"], usd=st["usd"])
-        log(f"묶음 저장: {len(made)}/{len(cur['keys'])}건 · 통과 {stat['ok']} · 원문만 {stat['fallback']} · 이번 ${gen_usd + rev_usd:.2f} · 누적 {st['done']}건 ${st['usd']:.2f}")
+        status("backlog", stage=st["stage"], done=st["done"], usd=st["usd"], days=days, win_done=win["done"], win_usd=win["usd"])
+        log(f"묶음 저장: {len(made)}/{len(cur['keys'])}건 · 통과 {stat['ok']} · 원문만 {stat['fallback']} · 이번 ${gen_usd + rev_usd:.2f} · "
+            f"구간 누적 {win['done']}건 ${win['usd']:.2f} · 전체 누적 {st['done']}건 ${st['usd']:.2f}")
         from . import sync
         sync.push()
         if limit or time.time() > deadline:
