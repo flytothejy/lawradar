@@ -6,7 +6,7 @@
 // 원칙(docs/SCENARIO.md): 판정 대신 변화로 답한다. 근거는 R2의 변경 색인(lcf/ask/index.tsv)뿐. 출처 없는 답은 내보내지 않는다.
 //
 // 바인딩: BUCKET(R2), LIMITS(KV) / 비밀값: ANTHROPIC_API_KEY, TEST_KEY
-// 변수: ALLOW_ORIGIN, DAILY_PER_IP, DAILY_TOTAL, MODEL_CLASSIFY, MODEL_ANSWER
+// 변수: ALLOW_ORIGIN, MODEL_CLASSIFY, MODEL_ANSWER, MODEL_RANK, 한도 ASK_/PROFILE_/REPORT_/RANK_ PER_IP·TOTAL (LIMITS)
 
 import { search, plainAnswer } from "./search.js";
 import RANK_PROMPT from "./rank_prompt.js";
@@ -117,17 +117,25 @@ function numbersOk(answer, items) {
 }
 
 // ── 한도 (KV) ──────────────────────────────────────────────────────────
-async function overLimit(env, ip) {
+// 게스트 한도 — 기능마다 따로 센다 (docs: 비공개 PREMIUM.md '등급(안)'). n: 이번에 쓰는 양
+const LIMITS = {                                            // [IP당 하루, 전체 하루] — wrangler 변수로 덮어쓸 수 있음
+  ask: ["ASK_PER_IP", 3, "ASK_TOTAL", 300],
+  profile: ["PROFILE_PER_IP", 3, "PROFILE_TOTAL", 200],
+  report: ["REPORT_PER_IP", 10, "REPORT_TOTAL", 500],
+  rank: ["RANK_PER_IP", 150, "RANK_TOTAL", 5000],
+};
+async function quota(env, name, ip, n = 1) {
+  const [ki, di, kt, dt] = LIMITS[name];
+  const per = +(env[ki] || di), total = +(env[kt] || dt);
   const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  const kIp = `ip:${day}:${ip}`, kAll = `all:${day}`;
+  const kIp = `q:${name}:${day}:${ip}`, kAll = `q:${name}:${day}`;
   const [a, b] = await Promise.all([env.LIMITS.get(kIp), env.LIMITS.get(kAll)]);
-  if (+a >= +(env.DAILY_PER_IP || 20) || +b >= +(env.DAILY_TOTAL || 300)) return true;
-  await Promise.all([
-    env.LIMITS.put(kIp, String(+a + 1), { expirationTtl: 172800 }),
-    env.LIMITS.put(kAll, String(+b + 1), { expirationTtl: 172800 }),
-  ]);
+  if (+a + n > per || +b + n > total) return true;
+  await Promise.all([env.LIMITS.put(kIp, String(+a + n), { expirationTtl: 172800 }),
+    env.LIMITS.put(kAll, String(+b + n), { expirationTtl: 172800 })]);
   return false;
 }
+
 
 const card = (r) => ({ key: r.key, kind: r.kind, name: r.name, title: r.title, summary: r.summary.slice(0, 200),
   announced: r.announced, effective: r.effective, page: r.page, url: r.url });
@@ -251,14 +259,9 @@ async function rankCall(env, user) {
 }
 async function rank(env, b, ip) {
   const text = String(b.text || "").trim().slice(0, 300), region = String(b.region || "").slice(0, 40);
-  const keys = [...new Set((Array.isArray(b.keys) ? b.keys : []).map(String).filter((k) => /^(law|admrul|ordin):\d{1,13}$/.test(k)))].slice(0, 90);
+  const keys = [...new Set((Array.isArray(b.keys) ? b.keys : []).map(String).filter((k) => /^(law|admrul|ordin):\d{1,13}$/.test(k)))].slice(0, 40);
   if (text.length < 4 || !keys.length) return { error: "상황 글과 후보가 필요해요" };
-  const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  const kIp = `rk:${day}:${ip}`, kAll = `rkall:${day}`;
-  const [a, z] = await Promise.all([env.LIMITS.get(kIp), env.LIMITS.get(kAll)]);
-  if (+a + keys.length > +(env.RANK_PER_IP || 400) || +z + keys.length > +(env.RANK_TOTAL || 30000)) return { error: "오늘 판정 한도를 넘었어요", limited: true };
-  await Promise.all([env.LIMITS.put(kIp, String(+a + keys.length), { expirationTtl: 172800 }),
-    env.LIMITS.put(kAll, String(+z + keys.length), { expirationTtl: 172800 })]);
+  if (await quota(env, "rank", ip, keys.length)) return { error: "오늘 판정 한도를 넘었어요", limited: true };
   const idx = await loadIndex(env), rows = indexRows(idx, keys);
   const have = keys.filter((k) => rows[k]), missing = keys.filter((k) => !rows[k]);
   const line = (k) => { const r = rows[k]; return `[${k}] ${KIND_T(r)} · ${r.name}` + (r.title ? ` — ${r.title}` : "") +
@@ -307,7 +310,7 @@ export default {
     try { body = await req.json(); } catch { return json(env, { error: "bad json" }, 400); }
     const ip = req.headers.get("cf-connecting-ip") || "unknown";
     if (url.pathname === "/report") {
-      if (await overLimit(env, ip)) return json(env, { error: "오늘 이용 한도를 넘었어요." }, 429);
+      if (await quota(env, "report", ip)) return json(env, { error: "오늘 이용 한도를 넘었어요." }, 429);
       try { const r = await report(env, body); return json(env, r, r.error ? 400 : 200); }
       catch (e) { return json(env, { error: "잠시 후 다시 시도해 주세요" }, 502); }
     }
@@ -327,15 +330,15 @@ export default {
       const text = String(body.text || "").trim().slice(0, 300);
       if (text.length < 4) return json(env, { error: "상황을 조금 더 적어 주세요" }, 400);
       const isT = env.TEST_KEY && req.headers.get("x-test-key") === env.TEST_KEY;
-      if (!isT && await overLimit(env, ip)) return json(env, { error: "오늘 이용 한도를 넘었어요. 내일 다시 이용해 주세요." }, 429);
+      if (!isT && await quota(env, "profile", ip)) return json(env, { error: "오늘 상황 정리 한도(3번)를 넘었어요. 분야를 직접 골라 주시거나 내일 다시 이용해 주세요." }, 429);
       try { return json(env, { profile: await profile(env, text) }); }
       catch (e) { return json(env, { error: "상황을 정리하지 못했어요. 분야를 직접 골라 주세요.", detail: isT ? String(e) : undefined }, 502); }
     }
     const q = String(body.q || "").trim().slice(0, 300);
     if (q.length < 2) return json(env, { error: "질문을 입력해 주세요" }, 400);
     const isTest = env.TEST_KEY && req.headers.get("x-test-key") === env.TEST_KEY;
-    if (!isTest && await overLimit(env, ip))
-      return json(env, { error: "오늘 질문 한도를 넘었어요. 내일 다시 이용해 주세요." }, 429);
+    if (!isTest && await quota(env, "ask", ip))
+      return json(env, { error: "오늘 질문 한도(3번)를 넘었어요. 내일 다시 이용해 주세요." }, 429);
     try {
       return json(env, await ask(env, q, isTest ? body.test : null));
     } catch (e) {
