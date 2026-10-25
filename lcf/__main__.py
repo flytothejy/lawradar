@@ -38,7 +38,7 @@ def main(a):
         from . import collect, build, notify, backlog, tag
         collect.run()
         backlog.daily()                                   # 쉬운 말: 배치(반값) — LCF_DAILY_MODE=realtime이면 예전 방식
-        tag.run(days=14, rt=True)                         # 관련도 꼬리표: 새 항목만, 실시간 Haiku (하루 수 센트)
+        tag.run(days=14, minutes=40)                      # 관련도 꼬리표: 새 항목만 (40건 넘으면 배치 반값)
         build.run()
         if "--no-notify" not in a:
             notify.daily()
