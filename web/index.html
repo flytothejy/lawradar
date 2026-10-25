@@ -237,6 +237,12 @@ dialog#fbd::backdrop{background:rgba(10,14,22,.45)}
 @keyframes pulse{50%{box-shadow:inset 0 0 0 4px var(--ins-bg),inset 0 0 0 1.5px var(--ins)}}
 .think .err{margin:0}
 .think-mini{display:flex;align-items:center;gap:.6rem;margin:.6rem 0 0;font-size:.8125rem;color:var(--muted)}
+.ex-h{margin:1.75rem 0 .6rem;font-size:.875rem;font-weight:600}.ex-h small{display:block;font-weight:400;color:var(--muted);font-size:.8125rem}
+.exs{display:flex;flex-direction:column;gap:.5rem}
+.ex{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:.2rem;padding:.75rem .9rem;background:var(--card);border:1px solid var(--rule);border-radius:12px;font-size:.875rem;line-height:1.55;color:var(--ink);word-break:keep-all}
+.ex[hidden]{display:none}
+.ex b{font-size:.75rem;font-weight:600;color:var(--ins)}
+.ex:hover{border-color:var(--ins)}.ex:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
 </style>
 </head>
@@ -250,20 +256,28 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
     <p class="lede">법령, 고시, 우리 동네 조례 중에서 나에게 해당하는 변화만 골라 <del>바뀌기 전</del><span class="arrow">→</span><ins>바뀐 뒤</ins>로 보여 줍니다.</p>
     <form id="sitf">
       <label class="lbl" for="sit">어떤 상황이세요?</label>
-      <textarea id="sit" maxlength="300" placeholder="예: 화성 제부도에서 펜션을 운영하고 있어요. 손님은 주로 숙박 앱으로 받고, 장 보러 차를 자주 써요."></textarea>
-      <p class="hint">사는 곳, 하는 일, 신경 쓰이는 것을 편하게 적어 주세요.</p>
+      <textarea id="sit" maxlength="300" placeholder="예: 부산 해운대구에서 직원 2명과 카페를 해요. 가격표·위생 규정, 최저임금, 소상공인 지원이 바뀌면 알고 싶어요."></textarea>
+      <p class="hint"><b>사는 곳</b> · <b>하는 일이나 처지</b> · <b>신경 쓰이는 변화</b>를 적어 주세요. 구체적일수록 잘 골라요.</p>
       <p class="err" id="sit-err" hidden></p>
       <button class="cta" id="sit-go" type="submit" style="margin-top:1rem">내 맞춤 피드 만들기</button>
       <div id="sit-think" aria-live="polite"></div>
       <a class="sub" href="#/profile?manual=1">분야를 직접 고를게요</a>
       <div class="resume" id="resume" hidden><span id="resume-t"></span><a href="#/timeline">내 타임라인 →</a></div>
-      <div id="sit-ex"><span class="hint" style="display:block;margin-top:1.75rem">이렇게 적어도 돼요 · 누르면 위에 채워져요</span>
-      <div class="chips" id="chips">
-        <button type="button" class="chip">화성 제부도에서 펜션을 운영하고, 손님은 숙박 앱으로 받아요</button>
-        <button type="button" class="chip">동탄에서 카페를 해요</button>
-        <button type="button" class="chip">아이 키우는 부산 시민이에요</button>
-        <button type="button" class="chip">수원에 집 한 채 있고 갈아타기를 고민 중이에요</button>
-      </div></div>
+      <div id="sit-ex">
+        <p class="ex-h">처음이라면 이런 식으로 써 보세요 <small>누르면 위에 채워지고, 내 상황에 맞게 고치면 돼요</small></p>
+        <div class="exs" id="chips">
+        <button type="button" class="ex" data-text="부산 해운대구에서 직원 2명과 카페를 해요. 가격표·위생 규정, 최저임금, 소상공인 지원이 바뀌면 알고 싶어요."><b>카페·음식점</b><span>부산 해운대구에서 직원 2명과 카페를 해요. 가격표·위생 규정, 최저임금, 소상공인 지원이 바뀌면 알고 싶어요.</span></button>
+        <button type="button" class="ex" data-text="제주에서 펜션을 운영하고 손님은 주로 숙박 앱으로 받아요. 영업신고, 요금 게시, 소방 기준이 바뀌는 게 걱정돼요."><b>펜션·숙박</b><span>제주에서 펜션을 운영하고 손님은 주로 숙박 앱으로 받아요. 영업신고, 요금 게시, 소방 기준이 바뀌는 게 걱정돼요.</span></button>
+        <button type="button" class="ex" data-text="화성 동탄에 살고 어린이집 다니는 아이를 키우는 맞벌이예요. 육아휴직·출산휴가, 아동수당, 보육 지원이 달라지면 챙기고 싶어요."><b>아이 키우는 집</b><span>화성 동탄에 살고 어린이집 다니는 아이를 키우는 맞벌이예요. 육아휴직·출산휴가, 아동수당, 보육 지원이 달라지면 챙기고 싶어요.</span></button>
+        <button type="button" class="ex" data-text="대구 수성구에 아파트 두 채가 있고 한 채는 2년 안에 팔 생각이에요. 양도세·종부세 비과세 기준이 바뀌는지 알고 싶어요."><b>집 두 채</b><span>대구 수성구에 아파트 두 채가 있고 한 채는 2년 안에 팔 생각이에요. 양도세·종부세 비과세 기준이 바뀌는지 알고 싶어요.</span></button>
+        <button type="button" class="ex" data-text="서울 마포구에서 전세로 사는 20대 직장인이에요. 보증금 보호, 청년 월세·주거 지원, 연말정산이 바뀌면 알려 주세요."><b>전세 사는 직장인</b><span>서울 마포구에서 전세로 사는 20대 직장인이에요. 보증금 보호, 청년 월세·주거 지원, 연말정산이 바뀌면 알려 주세요.</span></button>
+        <button type="button" class="ex ex-more" hidden data-text="강원도 춘천에서 발달장애가 있는 초등학생 아이를 키워요. 활동지원, 특수교육, 발달재활 지원이 바뀌는지 챙기고 싶어요."><b>장애 아이 돌봄</b><span>강원도 춘천에서 발달장애가 있는 초등학생 아이를 키워요. 활동지원, 특수교육, 발달재활 지원이 바뀌는지 챙기고 싶어요.</span></button>
+        <button type="button" class="ex ex-more" hidden data-text="전북 김제에서 벼농사를 지어요. 직불금, 농업재해 보상, 면세유처럼 농가에 바로 닿는 변화를 알고 싶어요."><b>농사</b><span>전북 김제에서 벼농사를 지어요. 직불금, 농업재해 보상, 면세유처럼 농가에 바로 닿는 변화를 알고 싶어요.</span></button>
+        <button type="button" class="ex ex-more" hidden data-text="인천에서 직원 40명 규모 물류창고를 운영해요. 산업안전·중대재해, 근로시간, 외국인 고용 규정이 바뀌면 바로 알고 싶어요."><b>작은 회사 대표</b><span>인천에서 직원 40명 규모 물류창고를 운영해요. 산업안전·중대재해, 근로시간, 외국인 고용 규정이 바뀌면 바로 알고 싶어요.</span></button>
+        <button type="button" class="ex ex-more" hidden data-text="회사 다니면서 부업으로 앱을 운영해요. 개인정보 보호 의무나 부업 소득 세금 신고가 바뀌면 알고 싶어요."><b>부업·앱 운영</b><span>회사 다니면서 부업으로 앱을 운영해요. 개인정보 보호 의무나 부업 소득 세금 신고가 바뀌면 알고 싶어요.</span></button>
+        </div>
+        <button type="button" class="more-t" id="ex-more">예시 4개 더 보기</button>
+      </div>
     </form>
     <div class="other">다른 방법으로 보기 · <a href="#/week">이번 주 전국 변화</a><a href="r/">지역별 조례</a><a href="#/ask">바뀐 것 물어보기</a><a href="guide.html">법은 이렇게 생겼어요</a></div>
   </section>
@@ -455,7 +469,8 @@ function thinking(el, title, steps, at){
     clear(){ clearInterval(tick); el.innerHTML = ""; }
   };
 }
-$("#chips").addEventListener("click", e => { if (e.target.matches(".chip")) { $("#sit").value = e.target.textContent; $("#sit").scrollIntoView({behavior: "smooth", block: "center"}); $("#sit").focus({preventScroll: true}); } });
+$("#ex-more").onclick = () => { document.querySelectorAll(".ex-more").forEach(x => x.hidden = false); $("#ex-more").hidden = true; };
+$("#chips").addEventListener("click", e => { const b = e.target.closest(".ex"); if (b) { $("#sit").value = b.dataset.text; $("#sit").scrollIntoView({behavior: "smooth", block: "center"}); $("#sit").focus({preventScroll: true}); } });
 $("#sitf").addEventListener("submit", async e => {
   e.preventDefault();
   const text = $("#sit").value.trim(), err = $("#sit-err"), btn = $("#sit-go");
