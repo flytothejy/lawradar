@@ -507,13 +507,19 @@ let RANKING = false;
 async function rankMissing(d, p){
   if (RANKING || !p || !p.text || !LR.v2({tagged: 1}, p)) return;
   const labels = LR.rankLoad(p);
-  const need = d.rows.filter(r => { const m = LR.match(r, p); return m && m.cand && labels[r.key] === undefined; }).map(r => r.key).slice(0, 90);
+  try { if (localStorage.getItem("lr-rank-off") === TODAY) return; } catch (e) {}     // 오늘 한도를 넘었으면 규칙 화면 그대로
+  // 한 번에 40건: 규칙으로도 분명한 것 → 곧 시행 → 최근 순으로 먼저
+  const need = d.rows.map(r => ({r, m: LR.match(r, p)})).filter(x => x.m && x.m.cand && labels[x.r.key] === undefined)
+    .sort((a, b) => (+b.m.strong - +a.m.strong) || (+(b.r.effective > TODAY) - +(a.r.effective > TODAY)) || b.r.announced.localeCompare(a.r.announced))
+    .map(x => x.r.key).slice(0, 40);
   if (!need.length) return;
   RANKING = true; $("#tl-rank").hidden = false;
   try {
     await cfg; if (!API) return;
     const r = await fetch(API + "/rank", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({text: p.text, region: p.region, keys: need})});
-    const o = await r.json(); if (!r.ok) return;
+    const o = await r.json();
+    if (r.status === 429) { try { localStorage.setItem("lr-rank-off", TODAY); } catch (e) {} return; }
+    if (!r.ok) return;
     const next = {...LR.rankLoad(p), ...(o.labels || {})};
     (o.missing || []).forEach(k => { if (next[k] === undefined) next[k] = 1; });   // 색인에 없는 것(내용 없음)은 규칙대로 보여 줌
     LR.rankSave(p, next);
