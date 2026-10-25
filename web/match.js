@@ -93,10 +93,10 @@
       return null;
     }
     if (internal) return null;
-    // 넓은 꼬리표(직장인·소상공인 등)만 겹치면: 변경이 그 무리를 콕 집고(꼬리표 2개 이하) 실제 할 일이 있을 때만 본문
+    // 넓은 꼬리표(직장인·소상공인 등)만 겹치면 접힌 칸 — 2차 판정(실제로 보이는 것 전부)에서 '콕 집으면 허용'은 정밀도 30%, 이 규칙은 39%
     const specific = hit.some((t) => !BROAD.has(t));
     const focused = aud.length <= 2 && act.some((a) => a !== "절차가 바뀌는 것" && a !== "행정 내부");
-    if (hit.length && (!act.length || (!specific && !focused))) return { why: whyAud, strong: false, area: null, kw: kw || null };
+    if (hit.length && (!act.length || !specific)) return { why: whyAud, strong: false, area: null, kw: kw || null };
     if (hit.length) {
       const why = [...whyAud]; if (law) why.unshift(`지켜보는 법령: ${r.base}`); if (kw) why.push(`관심 낱말: ${kw}`);
       return { why, strong: true, area: areaOf(), kw: kw || null };
