@@ -9,6 +9,7 @@
 // 변수: ALLOW_ORIGIN, DAILY_PER_IP, DAILY_TOTAL, MODEL_CLASSIFY, MODEL_ANSWER
 
 import { search, plainAnswer } from "./search.js";
+import RANK_PROMPT from "./rank_prompt.js";
 
 const TYPES = ["change", "current", "judgment", "out_of_scope"];
 const PACKS = { real_estate_tax: "부동산 세금" };
@@ -221,6 +222,55 @@ async function report(env, b) {
   return { ok: true };
 }
 
+// ── AI 재판정: 꼬리표로 모은 후보를 그 사람의 상황 글로 한 번 더 (docs/RELEVANCE.md) ──────────
+// 후보 내용은 화면이 보내지 않고 색인에서 찾음 (키만 받음) → 임의 글을 모델에 넣는 통로가 되지 않게
+const KIND_T = (r) => r.kind === "law" ? (r.type === "법률" ? "국회가 바꾼 법" : "정부 세부 기준") : r.kind === "admrul" ? "부처 고시" : `${r.org} ${r.type}`;
+function indexRows(idx, keys) {
+  const out = {};
+  for (const k of keys) {
+    let i = idx.body.startsWith(k + "\t") ? 0 : idx.body.indexOf("\n" + k + "\t");
+    if (i < 0) continue;
+    if (i > 0) i += 1;
+    const line = idx.body.slice(i, idx.body.indexOf("\n", i) >>> 0 || undefined);
+    const v = line.split("\t"); out[k] = Object.fromEntries(idx.cols.map((c, j) => [c, v[j] || ""]));
+  }
+  return out;
+}
+async function rankCall(env, user) {
+  const model = env.MODEL_RANK || "claude-sonnet-5-5";
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({ model, max_tokens: 3000, system: RANK_PROMPT, messages: [{ role: "user", content: user }],
+      ...(model.startsWith("claude-sonnet-5-5") ? { thinking: { type: "between_tools" } } : model.startsWith("claude-haiku-5") ? { thinking: { type: "disabled" } } : {}) }),
+  });
+  if (!r.ok) throw new Error(`claude ${r.status}`);
+  const text = ((await r.json()).content || []).map((b) => b.text || "").join("");
+  const m = text.match(/\[[\s\S]*\]/);
+  return m ? JSON.parse(m[0]) : [];
+}
+async function rank(env, b, ip) {
+  const text = String(b.text || "").trim().slice(0, 300), region = String(b.region || "").slice(0, 40);
+  const keys = [...new Set((Array.isArray(b.keys) ? b.keys : []).map(String).filter((k) => /^(law|admrul|ordin):\d{1,13}$/.test(k)))].slice(0, 90);
+  if (text.length < 4 || !keys.length) return { error: "상황 글과 후보가 필요해요" };
+  const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  const kIp = `rk:${day}:${ip}`, kAll = `rkall:${day}`;
+  const [a, z] = await Promise.all([env.LIMITS.get(kIp), env.LIMITS.get(kAll)]);
+  if (+a + keys.length > +(env.RANK_PER_IP || 400) || +z + keys.length > +(env.RANK_TOTAL || 30000)) return { error: "오늘 판정 한도를 넘었어요", limited: true };
+  await Promise.all([env.LIMITS.put(kIp, String(+a + keys.length), { expirationTtl: 172800 }),
+    env.LIMITS.put(kAll, String(+z + keys.length), { expirationTtl: 172800 })]);
+  const idx = await loadIndex(env), rows = indexRows(idx, keys);
+  const have = keys.filter((k) => rows[k]), missing = keys.filter((k) => !rows[k]);
+  const line = (k) => { const r = rows[k]; return `[${k}] ${KIND_T(r)} · ${r.name}` + (r.title ? ` — ${r.title}` : "") +
+    (r.summary && r.summary !== r.title ? ` / ${r.summary.slice(0, 160)}` : "") + (r.effective ? ` (시행 ${r.effective})` : ""); };
+  const head = `상황 (사용자가 직접 쓴 글): ${text}\n사는 곳: ${region || "모름"}\n\n후보:\n`;
+  const chunks = []; for (let i = 0; i < have.length; i += 30) chunks.push(have.slice(i, i + 30));
+  const res = await Promise.all(chunks.map((c) => rankCall(env, head + c.map(line).join("\n")).catch(() => [])));
+  const labels = {};
+  res.flat().forEach((o) => { if (o && have.includes(o.key) && [0, 1, 2].includes(o.label)) labels[o.key] = o.label; });
+  return { labels, missing };
+}
+
 // 관심 표시 익명 집계 — 항목별 관심 있음·없음 횟수, 숨긴 범위, 이유. 개인 정보 없음
 const FB_ACTS = ["star", "unstar", "hide", "unhide"], FB_SCOPES = ["item", "law", "keyword"];
 const FB_REASONS = ["나와 상관없는 대상", "이미 알고 있음", "너무 사소함"];
@@ -252,13 +302,17 @@ export default {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(env) });
     if (url.pathname === "/health") return json(env, { ok: true });
-    if (!["/ask", "/profile", "/subscribe", "/report", "/feedback"].includes(url.pathname) || req.method !== "POST") return json(env, { error: "not found" }, 404);
+    if (!["/ask", "/profile", "/subscribe", "/report", "/feedback", "/rank"].includes(url.pathname) || req.method !== "POST") return json(env, { error: "not found" }, 404);
     let body;
     try { body = await req.json(); } catch { return json(env, { error: "bad json" }, 400); }
     const ip = req.headers.get("cf-connecting-ip") || "unknown";
     if (url.pathname === "/report") {
       if (await overLimit(env, ip)) return json(env, { error: "오늘 이용 한도를 넘었어요." }, 429);
       try { const r = await report(env, body); return json(env, r, r.error ? 400 : 200); }
+      catch (e) { return json(env, { error: "잠시 후 다시 시도해 주세요" }, 502); }
+    }
+    if (url.pathname === "/rank") {
+      try { const r = await rank(env, body, ip); return json(env, r, r.error ? (r.limited ? 429 : 400) : 200); }
       catch (e) { return json(env, { error: "잠시 후 다시 시도해 주세요" }, 502); }
     }
     if (url.pathname === "/feedback") {

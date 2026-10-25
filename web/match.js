@@ -86,20 +86,22 @@
       if (internal) return null;                              // 의회·위원회·기관 운영 같은 조례는 보이지 않음
       if (p.region && r.org === p.region) {
         if (hit.length)
-          return { why: [p.region === p.sido ? `${p.sido} 조례` : `우리 동네(${short(p.region)}) 조례`, ...whyAud], strong: true, area: local, kw: kw || null };
+          return { why: [p.region === p.sido ? `${p.sido} 조례` : `우리 동네(${short(p.region)}) 조례`, ...whyAud], strong: true, cand: true, area: local, kw: kw || null };
         return { why: [`우리 동네(${short(p.region)}) 조례`], strong: false, area: local, kw: kw || null };   // '지역 주민 누구나'도 접힌 칸
       }
-      if (p.sido && r.org === p.sido && hit.length) return { why: [`${p.sido} 조례`, ...whyAud], strong: true, area: local, kw: kw || null };
+      if (p.sido && r.org === p.sido && hit.length) return { why: [`${p.sido} 조례`, ...whyAud], strong: true, cand: true, area: local, kw: kw || null };
       return null;
     }
     if (internal) return null;
     // 넓은 꼬리표(직장인·소상공인 등)만 겹치면 접힌 칸 — 2차 판정(실제로 보이는 것 전부)에서 '콕 집으면 허용'은 정밀도 30%, 이 규칙은 39%
     const specific = hit.some((t) => !BROAD.has(t));
     const focused = aud.length <= 2 && act.some((a) => a !== "절차가 바뀌는 것" && a !== "행정 내부");
-    if (hit.length && (!act.length || !specific)) return { why: whyAud, strong: false, area: null, kw: kw || null };
+    // AI 재판정 후보(cand): 넓은 꼬리표라도 콕 집으면 후보 — 판정이 오기 전에는 엄격한 규칙(strong)으로 보여 줌
+    const cand = hit.length > 0 && act.length > 0 && (specific || focused);
+    if (hit.length && (!act.length || !specific)) return { why: whyAud, strong: false, cand, area: cand ? areaOf() : null, kw: kw || null };
     if (hit.length) {
       const why = [...whyAud]; if (law) why.unshift(`지켜보는 법령: ${r.base}`); if (kw) why.push(`관심 낱말: ${kw}`);
-      return { why, strong: true, area: areaOf(), kw: kw || null };
+      return { why, strong: true, cand: true, area: areaOf(), kw: kw || null };
     }
     // 대상은 안 겹치지만 내가 고른 법령·낱말 — 아래 '그 밖에' 접힌 칸으로
     if (law || kw || (aud.includes("국민 누구나") && doing))
@@ -109,6 +111,17 @@
   const match1 = LR.match;
   LR.match1 = match1;
   LR.match = (r, p) => (LR.v2(r, p) ? LR.match2(r, p) : match1(r, p));
+
+  // ── AI 재판정 결과 (Worker /rank) — 이 기기에 조건별로 저장. {h: 조건 지문, labels: {key: 0|1|2}}
+  const RK = "lr-rank";
+  LR.rankHash = (p) => [p.text || "", p.region || "", [...LR.effAud(p)].sort().join(",")].join("|");
+  LR.rankLoad = (p) => { try { const o = JSON.parse(localStorage.getItem(RK) || "{}"); return o.h === LR.rankHash(p) ? o.labels || {} : {}; } catch (e) { return {}; } };
+  LR.rankSave = (p, labels) => { try { localStorage.setItem(RK, JSON.stringify({ h: LR.rankHash(p), labels })); } catch (e) {} };
+  // 판정이 있으면 그것으로 본문 여부를 정함: 2 꼭 확인 · 1 본문 · 0 접힌 칸
+  LR.applyRank = (m, label) => {
+    if (!m || !m.cand || label === undefined) return m;
+    return { ...m, strong: label >= 1, tier: label, area: m.area || null };
+  };
 
   // 쉬운 종류 표시 — 누가 바꾼 것인지 (guide.html '법은 이렇게 생겼어요'와 같은 말)
   LR.kind = (r) => {
