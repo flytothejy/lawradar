@@ -605,7 +605,8 @@ async function showTimeline(qs){
   $("#tl-areas").innerHTML = [`<a href="#/timeline"${TL_AREA ? "" : ' aria-current="true"'}>전체 ${hits.length}</a>`,
     ...areas.map(a => `<a href="#/timeline?a=${encodeURIComponent(a.id)}"${TL_AREA === a.id ? ' aria-current="true"' : ""}>${esc(a.label)} ${a.n}</a>`)].join("");
   const soonOf = l => l.filter(r => r.effective > TODAY).sort((a, b) => a.effective.localeCompare(b.effective));
-  const pastOf = l => l.filter(r => !(r.effective > TODAY)).sort((a, b) => b.announced.localeCompare(a.announced));
+  const must = r => (r.m && r.m.tier === 2) ? 1 : 0;           // '꼭 확인'을 칸마다 맨 앞에
+  const pastOf = l => l.filter(r => !(r.effective > TODAY)).sort((a, b) => must(b) - must(a) || b.announced.localeCompare(a.announced));
   const tail = `<p class="legend">표시 뜻: <a href="guide.html">국회가 바꾼 법 · 정부 세부 기준 · 부처 고시 · 우리 동네 조례</a></p>
     <div class="scope"><b>법레이더가 보는 범위</b><span>법령·행정규칙·자치법규(조례)만 봐요. 입법예고·판례·해석례는 아직이에요. 국가법령정보센터 등록이 늦으면 며칠 뒤에 뜨기도 해요. 여기 없다고 안 바뀐 것은 아니에요.</span></div>
     <p class="fbnote">관심 표시는 이 기기에 저장되고, 어떤 변화가 쓸모 있었는지 익명으로만 집계해 고르는 기준을 다듬어요.</p>`;
