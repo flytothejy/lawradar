@@ -13,6 +13,7 @@
   python -m lcf sync pull|push|ls [--all-days]
   python -m lcf alert "메시지"
   python -m lcf backlog [--minutes 300] [--limit N] [--days 730] [--max-usd 0] [--count]   과거분 보강 → 배치 정리 (이어하기)
+  python -m lcf tag [--days 730] [--limit N] [--model M] [--keys a,b] [--realtime] [--dry]   관련도 꼬리표 (대상·행동 종류)
   python -m lcf bench --models a,b [--n 50] [--days 30]   모델 비교 시험 (data/lcf/bench/)
   python -m lcf probe service|search|find …   법령 API 응답 구조 보기 (lcf/probe.py)
 """
@@ -54,6 +55,10 @@ def main(a):
     elif cmd == "polish":
         from . import llm
         ks = _opt(a, "--keys", str)
+        if _opt(a, "--keys-file", str):                       # JSON(목록 또는 tests/relevance/pool.json 모양)
+            import json
+            j = json.load(open(_opt(a, "--keys-file", str), encoding="utf-8"))
+            ks = ",".join(x["key"] for o in j for x in o["items"]) if j and isinstance(j[0], dict) else ",".join(j)
         keys = [x.strip() for x in open(ks, encoding="utf-8") if x.strip()] if ks else None
         llm.run(_opt(a, "--from", D), _opt(a, "--to", D), _opt(a, "--max", int), dry="--dry" in a,
                 model=_opt(a, "--model", str), save="--no-save" not in a, keys=keys, out=_opt(a, "--out", str))
@@ -81,6 +86,15 @@ def main(a):
             backlog.count(); sys.exit(0)
         sys.exit(backlog.run(_opt(a, "--minutes", int, 300), _opt(a, "--limit", int), dry="--dry" in a,
                              days=_opt(a, "--days", int, 730), max_usd=_opt(a, "--max-usd", float, 0.0)))
+    elif cmd == "tag":
+        from . import tag
+        ks = _opt(a, "--keys", str)
+        if _opt(a, "--keys-file", str):                       # JSON(목록 또는 tests/relevance/pool.json 모양)
+            import json
+            j = json.load(open(_opt(a, "--keys-file", str), encoding="utf-8"))
+            ks = ",".join(x["key"] for o in j for x in o["items"]) if j and isinstance(j[0], dict) else ",".join(j)
+        sys.exit(tag.run(_opt(a, "--days", int, 730), _opt(a, "--limit", int), _opt(a, "--model", str, tag.MODEL),
+                         ks.split(",") if ks else None, rt="--realtime" in a, dry="--dry" in a, minutes=_opt(a, "--minutes", int, 120)))
     elif cmd == "bench":
         from . import bench
         bench.run(_opt(a, "--models", str, "claude-sonnet-5-5,claude-haiku-5-5").split(","), _opt(a, "--n", int, 50), _opt(a, "--days", int, 30))

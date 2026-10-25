@@ -57,6 +57,7 @@ def vocab():
         orgs |= {it["org"] for it in (read_json(p) or {}).get("items", {}).values() if it["kind"] == "ordin" and it["org"]}
     v = {"topics": list(cls["topics"].keys()),
          "packs": [{"id": x["id"], "name": x["name"], "desc": x.get("desc", "")} for x in (packs.load(i) for i in packs.all_ids())],
-         "regions": sorted(orgs)}
+         "regions": sorted(orgs),
+         "aud": [{"name": g["name"], "tags": [x for x, _ in g["tags"]]} for g in config("audience")["groups"]]}
     (OUT.parent / "vocab.json").write_text(json.dumps(v, ensure_ascii=False), encoding="utf-8")
     log(f"조건 낱말: 분야 {len(v['topics'])} · 팩 {len(v['packs'])} · 지역 {len(v['regions'])}")

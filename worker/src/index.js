@@ -41,14 +41,17 @@ const PROFILE = (v) => `너는 법령 변화 알림 서비스 '법레이더'의 
 {"who":"짧은 호칭 (예: 펜션 사장님, 동탄 카페 사장님, 아이 키우는 화성 시민)",
  "region":"시·군·구 정식 이름 (예: 경기도 화성시). 동네·신도시 이름은 시·군·구로 (동탄→경기도 화성시, 판교→경기도 성남시). 없으면 null",
  "job":"하는 일·처지를 한 줄 (예: 숙박업 (펜션) · 소상공인). 없으면 \"\"",
- "interests":[{"label":"사용자에게 보일 분야 이름 (구체적으로, 예: 숙박·위생 영업 기준)","topic":"아래 분야 중 하나","on":true}],
+ "aud":["이 사람에게 해당하는 대상 꼬리표 2~8개 — 아래 목록에서만, 가장 분명한 것부터"],
+ "interests":[{"label":"사용자에게 보일 분야 이름 (구체적으로, 예: 숙박·위생 영업 기준)","topic":"아래 분야 중 하나","aud":["이 분야에 해당하는 대상 꼬리표 1~3개 (aud 안에서)"],"on":true}],
  "laws":["지켜볼 법령의 정식 이름 (법률 이름만, 시행령·시행규칙 빼고. 예: 공중위생관리법, 소상공인기본법)"],
  "keywords":["법령 이름·제목에 나올 법한 낱말 2~6개 (예: 숙박, 영업신고, 유류세)"]}
 
 분야(topic)는 반드시 이 중에서: ${v.topics.join(", ")}${v.packs.map((p) => `, ${p.id}(${p.name}: ${p.desc})`).join("")}
 interests는 3~6개. 상황에 분명히 해당하면 on:true, '그럴 수도 있는 것'(예: 직원을 두면 노무)은 on:false로 하나 정도.
 지역 조례는 region으로 따로 챙기므로 interests에 넣지 않는다.
-laws는 3~6개, 실제로 있는 법률만. 확실하지 않으면 넣지 않는다.`;
+laws는 3~6개, 실제로 있는 법률만. 확실하지 않으면 넣지 않는다.
+대상 꼬리표(aud)는 반드시 이 목록에서만: ${(v.aud || []).map((g) => `[${g.name}] ${g.tags.join(" / ")}`).join(" ")}
+aud는 적힌 처지에서 분명한 것만 (예: '펜션 운영' → 숙박업, 소상공인. 직원 언급이 없으면 고용주는 넣지 않음. '집 두 채' → 다주택자). "국민 누구나"·"지역 주민 누구나"는 넣지 않는다.`;
 
 const OUT_OF_SCOPE = "이 서비스는 법령·조례가 언제 어떻게 바뀌었는지를 알려 드려요. 신고 대행이나 소송, 개인 상황 판단은 도와드릴 수 없어요.";
 const NOT_FOUND = "모아 둔 변경 기록(2024년 10월 이후)에서 관련 변화를 찾지 못했어요. 국가법령정보센터에서 직접 검색해 보실 수 있어요.";
@@ -179,14 +182,17 @@ async function profile(env, text) {
   const okTopic = new Set([...v.topics, ...v.packs.map((p) => p.id)]);
   const idx = await loadIndex(env).catch(() => null);
   const region = pickRegion(v, o.region);
+  const okAud = new Set((v.aud || []).flatMap((g) => g.tags));
+  const aud = [...new Set((o.aud || []).map(String).filter((x) => okAud.has(x)))].slice(0, 8);
   const interests = (o.interests || []).filter((x) => x && okTopic.has(x.topic)).slice(0, 7)
-    .map((x) => ({ label: String(x.label || x.topic).slice(0, 40), topic: x.topic, on: x.on !== false }));
+    .map((x) => ({ label: String(x.label || x.topic).slice(0, 40), topic: x.topic, on: x.on !== false,
+      aud: (x.aud || []).map(String).filter((t) => okAud.has(t)).slice(0, 3) }));
   const laws = [...new Set((o.laws || []).map((x) => String(x).replace(/\s*(시행령|시행규칙)$/, "").replace(/[·・]/g, "ㆍ").trim()))]   // 법령 이름의 가운뎃점은 ㆍ
     .filter((x) => x.length >= 3 && (!idx || idx.body.includes("\t" + x)))            // 우리 기록(2년)에 있는 법령만
     .slice(0, 8);
   return {
     who: String(o.who || "").slice(0, 30), region, sido: region ? region.split(" ")[0] : null,
-    job: String(o.job || "").slice(0, 60), interests, laws,
+    job: String(o.job || "").slice(0, 60), aud, interests, laws, v: 2,
     keywords: (o.keywords || []).map(String).filter((k) => k.length >= 2).slice(0, 6), text: text.slice(0, 300),
   };
 }
