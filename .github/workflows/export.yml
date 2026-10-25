@@ -23,6 +23,8 @@ jobs:
       - run: pip install -q -r requirements.txt
       - run: python -m lcf sync pull --all-days
       - run: python -m lcf build
+      - name: 오늘 사용 요약 (확인용, 알림 안 보냄)
+        run: python -m lcf usage $(TZ=Asia/Seoul date +%F) || true
       - uses: actions/upload-artifact@v4
         with:
           name: timeline

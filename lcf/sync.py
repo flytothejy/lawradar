@@ -53,8 +53,12 @@ def _same(p, sz, etag):
     return p.exists() and p.stat().st_size == sz and ("-" in etag or _md5(p) == etag)
 
 
+# Worker가 직접 쓰는 곳 — 매일 실행은 읽기만 하고 올리지 않음 (실행 중에 Worker가 새로 쓴 것을 옛 사본으로 덮지 않게)
+WORKER_OWNED = ("live/", "state/reports/")
+
+
 def _wanted(rel, all_days=False):
-    if rel.startswith(("state/", "digest/")) or rel == "status.json":
+    if rel.startswith(("state/", "digest/", "live/")) or rel == "status.json":
         return True
     m = re.match(r"(days|feed)/(\d{4}-\d{2}-\d{2})\.json$", rel)
     if not m:
@@ -82,7 +86,7 @@ def push():
     s3, b = client()
     rem = remote(s3, b)
     loc = {p.relative_to(DATA).as_posix(): p for p in DATA.rglob("*") if p.is_file() and not p.name.endswith(".tmp")}
-    todo = [(rel, p) for rel, p in loc.items() if not (rel in rem and _same(p, *rem[rel]))]
+    todo = [(rel, p) for rel, p in loc.items() if not (rel in rem and _same(p, *rem[rel])) and not rel.startswith(WORKER_OWNED)]
 
     def put(j):
         ct = {"json": "application/json", "html": "text/html; charset=utf-8"}.get(j[0].rsplit(".", 1)[-1])

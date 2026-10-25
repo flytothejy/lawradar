@@ -167,6 +167,14 @@ def _collect(txt, chunk, model):
     return got
 
 
+def _cost(usd):
+    """날짜별 꼬리표 비용 (하루 사용 요약이 읽음)"""
+    st = read_json(STATE_F, {"cur": None, "done": 0, "usd": 0.0})
+    d = st.setdefault("by_day", {}); k = today().isoformat()
+    d[k] = round(d.get(k, 0) + usd, 4)
+    write_json(STATE_F, st, pretty=True)
+
+
 def _m(model):
     """'모델:think'이면 생각을 켠 채로(max_tokens 넉넉히) — (모델, thinking 설정, max_tokens)"""
     if model.endswith(":think"):
@@ -187,6 +195,7 @@ def realtime(keys, model=MODEL, dry=False):
             usage[k] += u.get(k, 0)
         res.update(_collect(txt, chunk, model))
     n = _save(res)
+    _cost(llm.usd(_m(model)[0], usage))
     log(f"꼬리표 {n}/{len(items)}건 ({model}) · 약 ${llm.usd(_m(model)[0], usage):.3f}")
     return res
 
@@ -244,6 +253,7 @@ def batch(keys, model=MODEL, minutes=120):
     st["done"] += n; st["usd"] = round(st["usd"] + usd, 3); st["cur"] = None
     write_json(STATE_F, st, pretty=True)
     status("tag", done=st["done"], usd=st["usd"])
+    _cost(usd)
     log(f"꼬리표 저장 {n}/{total}건 · 이번 ${usd:.2f} · 누적 {st['done']}건 ${st['usd']:.2f}")
     return 0
 

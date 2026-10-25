@@ -14,6 +14,7 @@
   python -m lcf alert "메시지"
   python -m lcf backlog [--minutes 300] [--limit N] [--days 730] [--max-usd 0] [--count]   과거분 보강 → 배치 정리 (이어하기)
   python -m lcf tag [--days 730] [--limit N] [--model M] [--keys a,b] [--realtime] [--dry]   관련도 꼬리표 (대상·행동 종류)
+  python -m lcf usage [날짜]                  하루 사용·비용 요약 (기본 어제)
   python -m lcf bench --models a,b [--n 50] [--days 30]   모델 비교 시험 (data/lcf/bench/)
   python -m lcf probe service|search|find …   법령 API 응답 구조 보기 (lcf/probe.py)
 """
@@ -42,6 +43,11 @@ def main(a):
         build.run()
         if "--no-notify" not in a:
             notify.daily()
+            from . import usage
+            try:
+                usage.summary()                           # 어제 하루 사용·비용 요약 (Worker 집계 + 배치 비용)
+            except Exception as e:                        # 요약 실패로 매일 실행이 멈추지 않게
+                print(f"하루 사용 요약 실패: {e}")
     elif cmd == "digest":
         from . import digest
         pid = a[1] if len(a) > 1 and not a[1].startswith("--") else None
@@ -101,6 +107,9 @@ def main(a):
         from . import rank
         rank.evaluate(_opt(a, "--model", str, "claude-sonnet-5-5"), _opt(a, "--cands", str, "tests/relevance/cands.json"),
                       _opt(a, "--out", str, "data/lcf/rank/labels.json"))
+    elif cmd == "usage":
+        from . import usage
+        usage.summary(a[1] if len(a) > 1 else None)
     elif cmd == "bench":
         from . import bench
         bench.run(_opt(a, "--models", str, "claude-sonnet-5-5,claude-haiku-5-5").split(","), _opt(a, "--n", int, 50), _opt(a, "--days", int, 30))
