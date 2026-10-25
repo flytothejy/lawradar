@@ -252,19 +252,18 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
       <label class="lbl" for="sit">어떤 상황이세요?</label>
       <textarea id="sit" maxlength="300" placeholder="예: 화성 제부도에서 펜션을 운영하고 있어요. 손님은 주로 숙박 앱으로 받고, 장 보러 차를 자주 써요."></textarea>
       <p class="hint">사는 곳, 하는 일, 신경 쓰이는 것을 편하게 적어 주세요.</p>
-      <div id="sit-ex"><span class="hint" style="display:block;margin-top:1.25rem">이렇게 적어도 돼요</span>
+      <p class="err" id="sit-err" hidden></p>
+      <button class="cta" id="sit-go" type="submit" style="margin-top:1rem">내 맞춤 피드 만들기</button>
+      <div id="sit-think" aria-live="polite"></div>
+      <a class="sub" href="#/profile?manual=1">분야를 직접 고를게요</a>
+      <div class="resume" id="resume" hidden><span id="resume-t"></span><a href="#/timeline">내 타임라인 →</a></div>
+      <div id="sit-ex"><span class="hint" style="display:block;margin-top:1.75rem">이렇게 적어도 돼요 · 누르면 위에 채워져요</span>
       <div class="chips" id="chips">
         <button type="button" class="chip">화성 제부도에서 펜션을 운영하고, 손님은 숙박 앱으로 받아요</button>
         <button type="button" class="chip">동탄에서 카페를 해요</button>
         <button type="button" class="chip">아이 키우는 부산 시민이에요</button>
         <button type="button" class="chip">수원에 집 한 채 있고 갈아타기를 고민 중이에요</button>
       </div></div>
-      <p class="err" id="sit-err" hidden></p>
-      <div class="resume" id="resume" hidden><span id="resume-t"></span><a href="#/timeline">내 타임라인 →</a></div>
-      <div class="grow"></div>
-      <button class="cta" id="sit-go" type="submit" style="margin-top:2rem">내 맞춤 피드 만들기</button>
-      <div id="sit-think" aria-live="polite"></div>
-      <a class="sub" href="#/profile?manual=1">분야를 직접 고를게요</a>
     </form>
     <div class="other">다른 방법으로 보기 · <a href="#/week">이번 주 전국 변화</a><a href="r/">지역별 조례</a><a href="#/ask">바뀐 것 물어보기</a><a href="guide.html">법은 이렇게 생겼어요</a></div>
   </section>
@@ -456,7 +455,7 @@ function thinking(el, title, steps, at){
     clear(){ clearInterval(tick); el.innerHTML = ""; }
   };
 }
-$("#chips").addEventListener("click", e => { if (e.target.matches(".chip")) { $("#sit").value = e.target.textContent; $("#sit").focus(); } });
+$("#chips").addEventListener("click", e => { if (e.target.matches(".chip")) { $("#sit").value = e.target.textContent; $("#sit").scrollIntoView({behavior: "smooth", block: "center"}); $("#sit").focus({preventScroll: true}); } });
 $("#sitf").addEventListener("submit", async e => {
   e.preventDefault();
   const text = $("#sit").value.trim(), err = $("#sit-err"), btn = $("#sit-go");
