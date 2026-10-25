@@ -23,6 +23,18 @@ id = "__KV__"
 name = "QUOTA"
 class_name = "Quota"
 
+[[durable_objects.bindings]]
+name = "USAGE"
+class_name = "Usage"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Quota"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Usage"]
+
+# 요청 기록 (대시보드 Workers 로그에서 최근 며칠)
+[observability]
+enabled = true

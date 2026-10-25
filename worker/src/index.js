@@ -68,6 +68,39 @@ const json = (env, obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json; charset=utf-8", ...cors(env) } });
 
 // ── Claude ─────────────────────────────────────────────────────────────
+// ── 운영 기록: 요청마다 기능·결과·시간·토큰·예상 비용만 (상황 글·질문 같은 내용은 남기지 않음) ──────────
+const PRICE = { "claude-sonnet-5-5": [2, 10], "claude-haiku-5-5": [0.1, 0.5], "claude-opus-5-5": [4, 20] };   // 100만 토큰당 달러 (lcf/llm.py와 같게)
+function useAdd(env, model, u) {
+  if (!env._use || !u) return;
+  const [pi, po] = PRICE[model] || [2, 10];
+  env._use.calls++; env._use.in += u.input_tokens || 0; env._use.out += u.output_tokens || 0;
+  env._use.usd += (u.input_tokens || 0) / 1e6 * pi + (u.output_tokens || 0) / 1e6 * po;
+}
+// 하루 집계는 Durable Object 하나가 차례로 더하고, 5분마다 R2 live/usage/<날짜>.json으로 내보냄 (매일 실행이 읽어 요약)
+export class Usage {
+  constructor(state, env) { this.state = state; this.env = env; }
+  async fetch(req) {
+    const r = await req.json(), s = this.state.storage;
+    const d = (await s.get(r.day)) || { day: r.day, ep: {}, fb: {} };
+    const e = d.ep[r.ep] = d.ep[r.ep] || { n: 0, ok: 0, err: 0, limited: 0, bad: 0, ms: 0, calls: 0, in: 0, out: 0, usd: 0 };
+    e.n++; e.ms += r.ms; e.calls += r.calls; e.in += r.in; e.out += r.out; e.usd += r.usd;
+    if (r.status === 429) e.limited++; else if (r.status >= 500) e.err++; else if (r.status >= 400) e.bad++; else e.ok++;
+    if (r.ep === "/rank" && r.n) e.judged = (e.judged || 0) + r.n;
+    if (r.fb) { const f = d.fb[r.fb.key] = d.fb[r.fb.key] || { star: 0, unstar: 0, hide: 0, unhide: 0 }; f[r.fb.act]++; }
+    await s.put(r.day, d);
+    if (!(await s.getAlarm())) await s.setAlarm(Date.now() + 5 * 60e3);
+    return new Response("ok");
+  }
+  async alarm() {
+    const s = this.state.storage, all = await s.list();
+    const cut = new Date(Date.now() + 9 * 3600e3 - 3 * 86400e3).toISOString().slice(0, 10);
+    for (const [day, d] of all) {
+      if (day < cut) { await s.delete(day); continue; }
+      await this.env.BUCKET.put(`lcf/live/usage/${day}.json`, JSON.stringify(d), { httpMetadata: { contentType: "application/json" } });
+    }
+  }
+}
+
 // Claude 5.x는 생각(thinking)이 기본으로 켜져 있고 max_tokens에 포함됨 → 복잡한 입력이면 생각에 다 써서 답이 잘림
 // 이 Worker의 일(분류·조건 만들기·답 쓰기)은 생각 없이 충분 — Sonnet 5.5는 disabled를 거부해서 between_tools
 const NO_THINK = (model) => model.startsWith("claude-sonnet-5-5") ? { thinking: { type: "between_tools" } }
@@ -80,6 +113,7 @@ async function claude(env, model, system, user, maxTokens) {
   });
   if (!r.ok) throw new Error(`claude ${r.status}`);
   const j = await r.json();
+  useAdd(env, model, j.usage);
   const text = (j.content || []).map((b) => b.text || "").join("");
   const m = text.match(/\{[\s\S]*\}/);
   if (!m) throw new Error("no json");
@@ -279,7 +313,9 @@ async function rankCall(env, user) {
       ...NO_THINK(model) }),
   });
   if (!r.ok) throw new Error(`claude ${r.status}`);
-  const text = ((await r.json()).content || []).map((b) => b.text || "").join("");
+  const j = await r.json();
+  useAdd(env, model, j.usage);
+  const text = (j.content || []).map((b) => b.text || "").join("");
   const m = text.match(/\[[\s\S]*\]/);
   return m ? JSON.parse(m[0]) : [];
 }
@@ -297,6 +333,7 @@ async function rank(env, b, ip) {
   const res = await Promise.all(chunks.map((c) => rankCall(env, head + c.map(line).join("\n")).catch(() => [])));
   const labels = {};
   res.flat().forEach((o) => { if (o && have.includes(o.key) && [0, 1, 2].includes(o.label)) labels[o.key] = o.label; });
+  env._n = Object.keys(labels).length;
   return { labels, missing };
 }
 
@@ -323,11 +360,30 @@ async function feedback(env, b, ip) {
   if (act === "unhide") doc.hide = Math.max(0, doc.hide - 1);
   doc.at = new Date().toISOString();
   await env.LIMITS.put(kf, JSON.stringify(doc));
+  env._fb = { key, act };
   return { ok: true };
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
+    const renv = Object.assign({}, env, { _use: { calls: 0, in: 0, out: 0, usd: 0 } });   // 요청마다 따로 세려고 env를 얕게 복사
+    const t0 = Date.now(), path = new URL(req.url).pathname;
+    let res;
+    try { res = await handle(req, renv); }
+    catch (e) { res = json(env, { error: "잠시 후 다시 시도해 주세요" }, 500); }
+    if (req.method === "POST" && ["/ask", "/profile", "/rank", "/feedback", "/report", "/subscribe"].includes(path)) {
+      const u = renv._use;
+      const rec = { day: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), ep: path, status: res.status, ms: Date.now() - t0,
+        calls: u.calls, in: u.in, out: u.out, usd: +u.usd.toFixed(5), n: renv._n || 0, fb: renv._fb || null };
+      console.log(JSON.stringify(rec));                         // Workers 로그 (observability)
+      if (env.USAGE) ctx.waitUntil(env.USAGE.get(env.USAGE.idFromName("usage")).fetch("https://usage/", { method: "POST", body: JSON.stringify(rec) }).catch(() => {}));
+    }
+    return res;
+  },
+};
+
+async function handle(req, env) {
+  {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(env) });
     if (url.pathname === "/health") return json(env, { ok: true, ip: req.headers.get("cf-connecting-ip") || "unknown" });   // 부른 사람 자신의 IP만 (한도 점검용)
@@ -370,5 +426,6 @@ export default {
     } catch (e) {
       return json(env, { error: "잠시 후 다시 시도해 주세요", detail: isTest ? String(e) : undefined }, 502);
     }
-  },
-};
+  }
+}
+
