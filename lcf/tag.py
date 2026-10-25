@@ -148,11 +148,18 @@ def _user(chunk):
     return "\n\n".join(item_text(it) for it in chunk)
 
 
+_SHOWN = [0]
+
+
 def _collect(txt, chunk, model):
     got = {}
+    want = {it["key"] for it in chunk}
     for o in llm._parse(txt):
-        if isinstance(o, dict) and o.get("key") in {it["key"] for it in chunk}:
-            got[o["key"]] = {**clean(o), "m": model}
+        if isinstance(o, dict) and str(o.get("key", "")).strip() in want:
+            got[str(o["key"]).strip()] = {**clean(o), "m": model}
+    if len(got) < len(want) and _SHOWN[0] < 3:              # 무엇이 어긋나는지 몇 개만 남김
+        _SHOWN[0] += 1
+        log(f"  꼬리표 응답 {len(got)}/{len(want)} 읽음 · 앞부분: {txt[:400]!r}")
     return got
 
 
