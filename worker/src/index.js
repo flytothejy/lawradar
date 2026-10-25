@@ -326,7 +326,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(env) });
-    if (url.pathname === "/health") return json(env, { ok: true });
+    if (url.pathname === "/health") return json(env, { ok: true, ip: req.headers.get("cf-connecting-ip") || "unknown" });   // 부른 사람 자신의 IP만 (한도 점검용)
     if (!["/ask", "/profile", "/subscribe", "/report", "/feedback", "/rank"].includes(url.pathname) || req.method !== "POST") return json(env, { error: "not found" }, 404);
     let body;
     try { body = await req.json(); } catch { return json(env, { error: "bad json" }, 400); }
