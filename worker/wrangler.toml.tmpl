@@ -17,3 +17,12 @@ bucket_name = "__BUCKET__"
 [[kv_namespaces]]
 binding = "LIMITS"
 id = "__KV__"
+
+# 한도 세기 (정확하게) — 무료 플랜은 SQLite 기반 Durable Object
+[[durable_objects.bindings]]
+name = "QUOTA"
+class_name = "Quota"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Quota"]

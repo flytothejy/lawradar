@@ -124,10 +124,32 @@ const LIMITS = {                                            // [IP당 하루, �
   report: ["REPORT_PER_IP", 10, "REPORT_TOTAL", 500],
   rank: ["RANK_PER_IP", 150, "RANK_TOTAL", 5000],
 };
+// 세기: Durable Object(한 곳에서 차례로 세서 정확) — KV는 읽기가 60초쯤 묵어 연달아 오면 못 막음. DO가 없으면 KV로
+export class Quota {
+  constructor(state) { this.state = state; }
+  async fetch(req) {
+    const { ip, n, per, total } = await req.json();
+    const s = this.state.storage;
+    const [a, b] = [(await s.get("ip:" + ip)) || 0, (await s.get("total")) || 0];
+    if (a + n > per || b + n > total) return Response.json({ over: true });
+    await s.put({ ["ip:" + ip]: a + n, total: b + n });
+    if (!(await s.getAlarm())) await s.setAlarm(Date.now() + 2 * 86400e3);   // 이틀 뒤 지움
+    return Response.json({ over: false });
+  }
+  async alarm() { await this.state.storage.deleteAll(); }
+}
+
 async function quota(env, name, ip, n = 1) {
   const [ki, di, kt, dt] = LIMITS[name];
   const per = +(env[ki] || di), total = +(env[kt] || dt);
   const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  if (env.QUOTA) {
+    try {
+      const stub = env.QUOTA.get(env.QUOTA.idFromName(`${name}:${day}`));
+      const r = await stub.fetch("https://quota/", { method: "POST", body: JSON.stringify({ ip, n, per, total }) });
+      return (await r.json()).over;
+    } catch (e) { /* 아래 KV로 */ }
+  }
   const kIp = `q:${name}:${day}:${ip}`, kAll = `q:${name}:${day}`;
   const [a, b] = await Promise.all([env.LIMITS.get(kIp), env.LIMITS.get(kAll)]);
   if (+a + n > per || +b + n > total) return true;
