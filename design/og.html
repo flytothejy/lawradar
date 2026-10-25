@@ -1,0 +1,33 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1200px;height:630px;background:#F7F8FA;font-family:"IBM Plex Sans KR",sans-serif;color:#1D2433;position:relative;overflow:hidden}
+.ring{position:absolute;right:-180px;top:-120px;width:760px;height:760px;border-radius:50%;border:2px solid #DCE0E7}
+.ring.b{right:-60px;top:0;width:520px;height:520px}
+.ring.c{right:60px;top:120px;width:280px;height:280px;border-color:#C9D3F5}
+.sweep{position:absolute;right:-180px;top:-120px;width:760px;height:760px;border-radius:50%;background:conic-gradient(from 20deg,rgba(35,73,194,.16),rgba(35,73,194,0) 60deg)}
+.blip{position:absolute;width:16px;height:16px;border-radius:50%;background:#2349C2;box-shadow:0 0 0 7px #E7ECFB}
+.wrap{position:absolute;left:84px;top:78px;width:660px}
+.brand{display:flex;align-items:center;gap:18px;font:700 64px/1 "Noto Serif KR",serif}
+.brand img{width:68px;height:68px}
+.beta{font:600 20px/1 "IBM Plex Sans KR";color:#1A3794;background:#E7ECFB;border-radius:999px;padding:8px 14px;margin-left:4px}
+h1{font:600 42px/1.38 "IBM Plex Sans KR";margin-top:44px;letter-spacing:-.5px}
+h1 em{font-style:normal;color:#2349C2}
+.card{margin-top:40px;background:#fff;border:1px solid #DCE0E7;border-radius:18px;padding:22px 26px;font-size:24px;line-height:1.55;width:640px}
+.card .k{font-size:18px;color:#626B7E;margin-bottom:6px}
+del{color:#B4372E;background:#F9E9E7;text-decoration-thickness:2px;padding:0 4px;border-radius:3px}
+ins{color:#2349C2;background:#E7ECFB;text-decoration:underline;text-underline-offset:5px;padding:0 4px;border-radius:3px}
+.foot{position:absolute;left:84px;bottom:46px;font-size:20px;color:#626B7E}
+</style></head><body>
+<div class="sweep"></div><div class="ring"></div><div class="ring b"></div><div class="ring c"></div>
+<div class="blip" style="right:250px;top:170px"></div>
+<div class="blip" style="right:120px;top:330px;opacity:.6"></div>
+<div class="blip" style="right:330px;top:420px;opacity:.35"></div>
+<div class="wrap">
+  <div class="brand"><img src="icon.svg" alt="">법레이더<span class="beta">베타</span></div>
+  <h1>내 일과 관련된 규칙이 바뀌면<br><em>먼저, 쉬운 말로</em> 알려 드려요</h1>
+  <div class="card"><div class="k">예) 바뀌기 전 → 후</div>신고 기한 <del>30일</del> → <ins>60일 이내</ins></div>
+</div>
+<div class="foot">법령 · 고시 · 우리 동네 조례 — 나에게 해당하는 변화만</div>
+</body></html>

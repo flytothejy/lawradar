@@ -338,7 +338,8 @@ def render(it, history, pack_names, reported=False):
 <title>{e(title)} — {e(it['name'])} | {BRAND}</title>
 <meta name="description" content="{e(desc)}">
 <link rel="canonical" href="{e(url)}">
-<meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:type" content="article"><meta property="og:site_name" content="{BRAND}"><meta property="og:url" content="{e(url)}">
+<meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:type" content="article"><meta property="og:site_name" content="{BRAND}"><meta property="og:url" content="{e(url)}"><meta property="og:image" content="{SITE_URL}/img/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../img/icon.svg" type="image/svg+xml"><link rel="icon" href="../img/icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="../img/apple-touch-icon.png"><meta name="theme-color" content="#2349C2">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet">
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
@@ -409,7 +410,8 @@ def _head(title, desc, url, depth=1):
 <title>{e(title)} | {BRAND}</title>
 <meta name="description" content="{e(desc)}">
 <link rel="canonical" href="{e(url)}">
-<meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="{e(url)}"><meta property="og:site_name" content="{BRAND}">
+<meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="{e(url)}"><meta property="og:site_name" content="{BRAND}"><meta property="og:image" content="{SITE_URL}/img/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../img/icon.svg" type="image/svg+xml"><link rel="icon" href="../img/icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="../img/apple-touch-icon.png"><meta name="theme-color" content="#2349C2">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet">
 <style>{CSS}
