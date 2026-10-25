@@ -160,6 +160,7 @@ const LIMITS = {                                            // [IP당 하루, �
   ask: ["ASK_PER_IP", 3, "ASK_TOTAL", 300],
   profile: ["PROFILE_PER_IP", 5, "PROFILE_TOTAL", 200],
   report: ["REPORT_PER_IP", 10, "REPORT_TOTAL", 500],
+  contact: ["CONTACT_PER_IP", 5, "CONTACT_TOTAL", 200],
   rank: ["RANK_PER_IP", 150, "RANK_TOTAL", 5000],
 };
 // 세기: Durable Object(한 곳에서 차례로 세서 정확) — KV는 읽기가 60초쯤 묵어 연달아 오면 못 막음. DO가 없으면 KV로
@@ -337,6 +338,17 @@ async function rank(env, b, ip) {
   return { labels, missing };
 }
 
+// 문의 — R2 live/contact/<날짜>/ 에 한 건씩 (하루 사용 요약이 건수를 알림). IP는 남기지 않음
+async function contact(env, b) {
+  const text = String(b.text || "").trim().slice(0, 1000), email = String(b.email || "").trim().slice(0, 120);
+  if (text.length < 5) return { error: "내용을 조금 더 적어 주세요" };
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "이메일 주소를 확인해 주세요" };
+  const now = new Date(Date.now() + 9 * 3600e3).toISOString();
+  await env.BUCKET.put(`lcf/live/contact/${now.slice(0, 10)}/${now.slice(11, 19).replace(/:/g, "")}-${crypto.randomUUID().slice(0, 8)}.json`,
+    JSON.stringify({ at: now, text, email }), { httpMetadata: { contentType: "application/json" } });
+  return { ok: true };
+}
+
 // 관심 표시 익명 집계 — 항목별 관심 있음·없음 횟수, 숨긴 범위, 이유. 개인 정보 없음
 const FB_ACTS = ["star", "unstar", "hide", "unhide"], FB_SCOPES = ["item", "law", "keyword"];
 const FB_REASONS = ["나와 상관없는 대상", "이미 알고 있음", "너무 사소함"];
@@ -371,7 +383,7 @@ export default {
     let res;
     try { res = await handle(req, renv); }
     catch (e) { res = json(env, { error: "잠시 후 다시 시도해 주세요" }, 500); }
-    if (req.method === "POST" && ["/ask", "/profile", "/rank", "/feedback", "/report", "/subscribe"].includes(path)) {
+    if (req.method === "POST" && ["/ask", "/profile", "/rank", "/feedback", "/report", "/subscribe", "/contact"].includes(path)) {
       const u = renv._use;
       const rec = { day: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), ep: path, status: res.status, ms: Date.now() - t0,
         calls: u.calls, in: u.in, out: u.out, usd: +u.usd.toFixed(5), n: renv._n || 0, fb: renv._fb || null };
@@ -387,13 +399,18 @@ async function handle(req, env) {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(env) });
     if (url.pathname === "/health") return json(env, { ok: true, ip: req.headers.get("cf-connecting-ip") || "unknown" });   // 부른 사람 자신의 IP만 (한도 점검용)
-    if (!["/ask", "/profile", "/subscribe", "/report", "/feedback", "/rank"].includes(url.pathname) || req.method !== "POST") return json(env, { error: "not found" }, 404);
+    if (!["/ask", "/profile", "/subscribe", "/report", "/feedback", "/rank", "/contact"].includes(url.pathname) || req.method !== "POST") return json(env, { error: "not found" }, 404);
     let body;
     try { body = await req.json(); } catch { return json(env, { error: "bad json" }, 400); }
     const ip = req.headers.get("cf-connecting-ip") || "unknown";
     if (url.pathname === "/report") {
       if (await quota(env, "report", ip)) return json(env, { error: "오늘 이용 한도를 넘었어요." }, 429);
       try { const r = await report(env, body); return json(env, r, r.error ? 400 : 200); }
+      catch (e) { return json(env, { error: "잠시 후 다시 시도해 주세요" }, 502); }
+    }
+    if (url.pathname === "/contact") {
+      if (await quota(env, "contact", ip)) return json(env, { error: "오늘은 더 보낼 수 없어요. 내일 다시 보내 주세요." }, 429);
+      try { const r = await contact(env, body); return json(env, r, r.error ? 400 : 200); }
       catch (e) { return json(env, { error: "잠시 후 다시 시도해 주세요" }, 502); }
     }
     if (url.pathname === "/rank") {

@@ -8,7 +8,7 @@ import datetime as dt
 
 from .core import BRAND, DATA, STATE, log, read_json, today, write_json
 
-EP = {"/profile": "상황 입력", "/rank": "AI 재판정", "/ask": "질문", "/feedback": "관심 표시", "/report": "신고", "/subscribe": "알림 신청"}
+EP = {"/profile": "상황 입력", "/rank": "AI 재판정", "/ask": "질문", "/feedback": "관심 표시", "/report": "신고", "/subscribe": "알림 신청", "/contact": "문의"}
 
 
 def _batch_usd(day):
@@ -57,6 +57,10 @@ def summary(day=None):
             lines.append("  ★ 많이: " + ", ".join(k for k, v in stars if v.get("star")))
         if hides and hides[0][1].get("hide"):
             lines.append("  ✕ 많이: " + ", ".join(k for k, v in hides if v.get("hide")))
+    cdir = DATA / "live" / "contact" / day
+    nc = len(list(cdir.glob("*.json"))) if cdir.exists() else 0
+    if nc:
+        lines.append(f"· 문의 {nc}건 — R2 live/contact/{day}/ 확인")
     rp = _reports(day)
     if rp:
         lines.append(f"· 신고 {rp}건 — 확인 필요")

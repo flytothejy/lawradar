@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>법레이더 소개·자주 묻는 질문 | 법레이더</title>
+<meta name="description" content="법레이더가 무엇을 해 주고 무엇은 하지 않는지, AI를 어떻게 쓰는지, 내 정보는 어떻게 다루는지 정리했어요.">
+<meta property="og:site_name" content="법레이더">
+<meta property="og:title" content="법레이더 소개·자주 묻는 질문">
+<meta property="og:description" content="법레이더가 무엇을 해 주고 무엇은 하지 않는지, AI를 어떻게 쓰는지, 내 정보는 어떻게 다루는지 정리했어요.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F8FA; --card:#FFFFFF; --ink:#1D2433; --muted:#626B7E; --rule:#DCE0E7;
+  --ins:#2349C2; --ins-bg:#E7ECFB; --ins-deep:#1A3794; --del:#B4372E; --del-bg:#F9E9E7; --soft:#EEF0F4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12151C; --card:#1A1E27; --ink:#E6E9EF; --muted:#9AA2B3; --rule:#2A303C;
+    --ins:#9DB2FF; --ins-bg:#1D2648; --ins-deep:#C3D0FF; --del:#FF8F84; --del-bg:#3A1F1E; --soft:#20252F;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12151C; --card:#1A1E27; --ink:#E6E9EF; --muted:#9AA2B3; --rule:#2A303C;
+  --ins:#9DB2FF; --ins-bg:#1D2648; --ins-deep:#C3D0FF; --del:#FF8F84; --del-bg:#3A1F1E; --soft:#20252F;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.7 "IBM Plex Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:40rem;margin:0 auto;padding:2.5rem 24px 4rem}
+a{color:var(--ins);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--ins);outline-offset:2px;border-radius:2px}
+.brand{display:inline-flex;align-items:center;gap:.45rem;font:700 1.0625rem/1 "Noto Serif KR",serif;color:var(--ink);text-decoration:none}
+.brand::before{content:"";width:.55rem;height:.55rem;border-radius:50%;background:var(--ins);box-shadow:0 0 0 3px var(--ins-bg)}
+h1{font:700 clamp(1.6rem,6vw,2.1rem)/1.35 "Noto Serif KR",serif;margin:1.75rem 0 .75rem;word-break:keep-all}
+h2{font:700 1.2rem/1.45 "Noto Serif KR",serif;margin:2.5rem 0 .75rem;word-break:keep-all}
+p{word-break:keep-all}
+.lede{color:var(--muted);font-size:.9375rem}
+/* 피라미드: 위가 좁고 아래로 넓어짐 */
+.pyr{list-style:none;margin:1.5rem 0 .5rem;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pyr li{width:var(--w);min-width:13rem;max-width:100%;background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:.65rem .9rem;text-align:center}
+.pyr li b{display:block;font-size:1rem}
+.pyr li span{display:block;font-size:.8125rem;color:var(--muted);line-height:1.5}
+.pyr li.key{border:1.5px solid var(--ins);background:var(--ins-bg)}
+.pyr li.key span{color:var(--ins-deep)}
+.pyr .gap{width:100%;border:0;border-top:1px dashed var(--rule);margin:.5rem 0 .25rem}
+.legend{font-size:.8125rem;color:var(--muted);text-align:center;margin:0}
+.tbl{width:100%;border-collapse:collapse;font-size:.9rem;margin:.5rem 0}
+.tbl th,.tbl td{text-align:left;padding:.55rem .5rem;border-top:1px solid var(--rule);vertical-align:top}
+.tbl th{font-weight:600;white-space:nowrap}
+.tbl td small{display:block;color:var(--muted);font-size:.8125rem}
+.wrap{overflow-x:auto}
+.ex{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:1rem 1.1rem;margin:1rem 0}
+.ex h3{margin:0 0 .6rem;font-size:1rem}
+.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.flow li{position:relative;padding:.1rem 0 .9rem 1.4rem;font-size:.9375rem}
+.flow li::before{content:"";position:absolute;left:.3rem;top:.55rem;width:.5rem;height:.5rem;border-radius:50%;background:var(--ins)}
+.flow li::after{content:"";position:absolute;left:.52rem;top:1.15rem;bottom:0;width:2px;background:var(--rule)}
+.flow li:last-child::after{display:none}
+.flow small{display:block;color:var(--muted);font-size:.8125rem}
+del{color:var(--del);background:var(--del-bg);padding:0 .15em;border-radius:2px}
+ins{color:var(--ins);background:var(--ins-bg);text-decoration:none;padding:0 .15em;border-radius:2px}
+.note{background:var(--soft);border-radius:12px;padding:.9rem 1rem;font-size:.9375rem}
+.note ul{margin:.3rem 0 0;padding-left:1.1rem}
+.cta{display:flex;align-items:center;justify-content:center;min-height:52px;margin-top:2rem;background:var(--ink);color:var(--paper);border-radius:14px;font-weight:600;text-decoration:none}
+footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
+
+.draft{background:var(--del-bg);color:var(--del);border-radius:12px;padding:.75rem 1rem;font-size:.875rem;margin:1rem 0}
+.chk{display:inline-block;font-size:.75rem;font-weight:600;color:var(--del);border:1px solid var(--del);border-radius:999px;padding:0 .45rem;margin-left:.25rem;vertical-align:1px}
+.faq details{border-top:1px solid var(--rule);padding:.75rem 0}.faq details:last-child{border-bottom:1px solid var(--rule)}
+.faq summary{cursor:pointer;font-weight:600}.faq p,.faq ul{margin:.5rem 0 0;color:var(--ink)}
+ol.terms{padding-left:1.25rem}ol.terms li{margin:.35rem 0}
+.contact textarea,.contact input{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:.75rem .9rem;width:100%}
+.contact textarea{min-height:8rem;resize:vertical}
+.contact label{display:block;font-size:.875rem;font-weight:600;margin:1rem 0 .4rem}
+.contact button{margin-top:1rem;width:100%;min-height:52px;border:0;border-radius:14px;background:var(--ink);color:var(--paper);font:inherit;font-weight:600;cursor:pointer}
+.contact .msg{font-size:.875rem;margin:.75rem 0 0}
+.foot-links{display:flex;flex-wrap:wrap;gap:.35rem .9rem;margin-top:.5rem}.foot-links a{color:var(--muted)}
+.beta{display:inline-block;font:600 .6875rem/1 "IBM Plex Sans KR",sans-serif;color:var(--ins);border:1px solid var(--ins);border-radius:999px;padding:.2rem .45rem;margin-left:.4rem;vertical-align:2px}
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="./">법레이더</a><span class="beta">베타</span>
+
+  <h1>법레이더는 이런 서비스예요</h1>
+  <p class="lede">법령·고시·우리 동네 조례가 매일 수십~수백 건씩 바뀌어요. 법레이더는 그중 <b>내 상황에 닿는 변화만 골라</b>, 무엇이 <del>바뀌기 전</del> → <ins>바뀐 뒤</ins>인지 쉬운 말로 보여 드려요.</p>
+
+  <h2>무엇을 해 드리나요</h2>
+  <ul>
+    <li>국가법령정보센터에 새로 올라온 법률·시행령·시행규칙·고시·전국 조례를 <b>매일</b> 모아요.</li>
+    <li>개정 이유·부칙·조문 비교를 바탕으로 <b>쉬운 말 요약</b>과 바뀌기 전·후를 만들고, 근거가 되는 <b>원문 구절</b>을 함께 보여 드려요.</li>
+    <li>적어 주신 상황에 맞춰 <b>관련 있는 변화만</b> 골라 내 타임라인에 보여 드려요. 꼭 확인할 것에는 표시를 해요.</li>
+    <li>해야 할 일이 생기는 변화에는 언제부터, 무엇을, 어디서 확인하면 되는지 <b>할 일 카드</b>를 붙여요.</li>
+  </ul>
+
+  <h2>하지 않는 것</h2>
+  <div class="note"><ul>
+    <li><b>내 경우에 해당하는지 판정하지 않아요.</b> 세금이 얼마인지, 받을 수 있는지 같은 판단은 담당 기관이나 세무사·노무사·변호사 같은 전문가에게 확인하세요.</li>
+    <li>신고·신청을 대신하지 않아요.</li>
+    <li>입법예고·판례·해석례는 아직 보지 않아요. 국가법령정보센터 등록이 늦으면 며칠 뒤에 뜨기도 해요. <b>여기 없다고 안 바뀐 것은 아니에요.</b></li>
+  </ul></div>
+
+  <h2 id="faq">자주 묻는 질문</h2>
+  <div class="faq">
+    <details><summary>AI가 정리한 내용이 틀리면 어떡하나요?</summary>
+      <p>틀릴 수 있어요. 그래서 이렇게 막고 있어요.</p>
+      <ul><li>숫자·날짜는 원문과 같은지, 원문 발췌는 글자 그대로인지 프로그램으로 대조해요.</li>
+      <li>정리한 내용을 다른 AI가 원문과 한 번 더 비교해요. 조건이 빠지거나 방향이 다르면 쉬운 말 대신 <b>원문만</b> 보여 드려요.</li>
+      <li>상세 화면의 '내용이 원문과 달라요'로 알려 주시면, 확인할 때까지 그 요약을 내리고 원문만 보여 드려요.</li></ul>
+      <p>중요한 결정 전에는 꼭 원문을 확인하세요.</p></details>
+    <details><summary>어떻게 '나와 관련된 것'을 고르나요?</summary>
+      <p>적어 주신 상황을 AI가 사는 곳·대상(예: 세입자, 음식점 운영)·분야로 정리해요. 변화마다 누구에게 닿는지 미리 붙여 둔 표시와 맞춰 후보를 고르고, AI가 상황 글을 보고 한 번 더 골라요. '관심 없음'을 누르면 비슷한 변화는 덜 보여 드려요.</p></details>
+    <details><summary>내가 적은 상황 글은 어디에 저장되나요?</summary>
+      <p>내 조건과 관심 표시는 <b>지금 쓰는 기기의 브라우저에만</b> 저장돼요. 상황 글은 조건을 만들고 관련 변화를 고를 때 AI(Anthropic)로 보내지고, 법레이더 서버에는 저장하지 않아요. 알림을 신청하면 이메일과 조건을 보관해요. 자세한 내용은 <a href="privacy.html">개인정보처리방침</a>을 보세요.</p></details>
+    <details><summary>돈이 드나요?</summary>
+      <p>베타 동안 무료예요. 대신 AI 비용 때문에 하루 이용 횟수에 한도가 있어요(상황 정리·질문 등). 한도를 넘으면 그날은 AI 없이 고른 결과를 보여 드려요.</p></details>
+    <details><summary>알림은 언제부터 받을 수 있나요?</summary>
+      <p>지금은 신청만 받고 있어요. 발송을 시작하면 첫 메일로 알려 드릴게요.</p></details>
+    <details><summary>어디까지 보나요?</summary>
+      <p>법률·대통령령·총리령·부령, 부처 고시, 전국 시·도와 시·군·구 조례·규칙이에요. 용어만 고친 정비성 변경은 걸러요. 쉬운 말 정리는 최근 2년 법령·고시와 최근 몇 달 조례를 중심으로 해요.</p></details>
+  </div>
+
+  <h2 id="contact">문의</h2>
+  <p class="lede">고칠 점, 바라는 점, 함께하고 싶은 일 모두 좋아요. 답장이 필요하면 이메일을 남겨 주세요.</p>
+  <form class="contact" id="cf">
+    <label for="cf-t">내용</label><textarea id="cf-t" maxlength="1000" required></textarea>
+    <label for="cf-e">답장 받을 이메일 (선택)</label><input type="email" id="cf-e" maxlength="120" placeholder="name@example.com">
+    <button type="submit">보내기</button>
+    <p class="msg" id="cf-msg" aria-live="polite"></p>
+  </form>
+  <p class="lede" style="font-size:.8125rem">보내신 내용과 이메일은 답변과 서비스 개선에만 쓰고, 답변이 끝나면 지워요.</p>
+<script>
+document.getElementById("cf").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const m = document.getElementById("cf-msg"), b = e.target.querySelector("button");
+  const text = document.getElementById("cf-t").value.trim(), email = document.getElementById("cf-e").value.trim();
+  if (text.length < 5) { m.textContent = "내용을 조금 더 적어 주세요."; return; }
+  b.disabled = true; m.textContent = "보내는 중…";
+  try {
+    const c = await (await fetch("config.json", {cache: "no-cache"})).json();
+    const api = (c.ask || "").replace(/\/ask$/, "");
+    const r = await fetch(api + "/contact", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({text, email})});
+    const o = await r.json();
+    if (!r.ok) throw new Error(o.error || "오류");
+    m.textContent = "보냈어요. 고맙습니다!"; e.target.reset();
+  } catch (x) { m.textContent = x.message || "잠시 후 다시 시도해 주세요."; }
+  finally { b.disabled = false; }
+});
+</script>
+  <footer>법레이더 (공개 베타) · 자료: 국가법령정보센터 공동활용 API
+    <div class="foot-links"><a href="about.html">소개·자주 묻는 질문</a><a href="terms.html">이용약관</a><a href="privacy.html"><b>개인정보처리방침</b></a><a href="about.html#contact">문의</a></div></footer>
+</main>
+</body>
+</html>
