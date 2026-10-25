@@ -170,7 +170,7 @@ def realtime(keys, model=MODEL, dry=False):
         chunk = items[i:i + PER_REQ]
         if dry:
             print(SYSTEM[:1500]); print("-----"); print(_user(chunk)[:3000]); return {}
-        txt, u = llm.call(model, SYSTEM, _user(chunk), max_tokens=2000)
+        txt, u = llm.call(model, SYSTEM, _user(chunk), max_tokens=2000, thinking=llm.no_thinking(model))
         for k in usage:
             usage[k] += u.get(k, 0)
         res.update(_collect(txt, chunk, model))
@@ -190,8 +190,10 @@ def batch(keys, model=MODEL, minutes=120):
     if not st.get("cur"):
         items = [it for _, it in _load(keys).values()]
         chunks = [items[i:i + PER_REQ] for i in range(0, len(items), PER_REQ)]
+        th = llm.no_thinking(model)
         reqs = [{"custom_id": f"c{i}", "params": {"model": model, "max_tokens": 2000, "system": SYSTEM,
-                                                  "messages": [{"role": "user", "content": _user(c)}]}} for i, c in enumerate(chunks)]
+                                                  "messages": [{"role": "user", "content": _user(c)}],
+                                                  **({"thinking": th} if th else {})}} for i, c in enumerate(chunks)]
         if not reqs:
             log("꼬리표 붙일 항목 없음"); return 0
         r = requests.post(B_API, headers=_h(), json={"requests": reqs}, timeout=300)

@@ -85,7 +85,17 @@ def key_for(model):
     return (os.environ.get("GEMINI_API_KEY") if model.startswith("gemini") else os.environ.get("ANTHROPIC_API_KEY") or "").strip()
 
 
-def call(model, system, user, max_tokens=8000, tries=4):
+def no_thinking(model):
+    """Claude 5.x는 생각(thinking)이 기본으로 켜져 있고 max_tokens에 포함됨 → 분류처럼 단순한 일은 끔.
+    Haiku 5.5는 disabled, Sonnet 5.5는 disabled를 거부해서 between_tools(도구가 없으니 사실상 끔)"""
+    if model.startswith("claude-haiku-5"):
+        return {"type": "disabled"}
+    if model.startswith("claude-sonnet-5-5"):
+        return {"type": "between_tools"}
+    return None
+
+
+def call(model, system, user, max_tokens=8000, tries=4, thinking=None):
     """(text, {"input_tokens", "output_tokens"})"""
     err = None
     for i in range(tries):
@@ -99,7 +109,8 @@ def call(model, system, user, max_tokens=8000, tries=4):
             else:
                 r = requests.post("https://api.anthropic.com/v1/messages", timeout=180, headers={
                     "x-api-key": key_for(model), "anthropic-version": "2023-06-01", "content-type": "application/json"},
-                    json={"model": model, "max_tokens": max_tokens, "system": system, "messages": [{"role": "user", "content": user}]})
+                    json={"model": model, "max_tokens": max_tokens, "system": system, "messages": [{"role": "user", "content": user}],
+                          **({"thinking": thinking} if thinking else {})})
             if r.status_code in (429, 500, 502, 503, 529):
                 err = f"HTTP {r.status_code} {r.text[:200]}"; time.sleep(5 * (i + 1)); continue
             if not r.ok:                                        # 400·401·403·404: 다시 해도 같음 — 본문(원인)을 남기고 바로 실패
