@@ -9,6 +9,15 @@
   LR.save = (p) => { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) {} };
   LR.clear = () => { try { localStorage.removeItem(KEY); } catch (e) {} };
 
+  // 낱말 찾기 — 두 글자 낱말은 앞에 한글이 붙어 있으면 다른 말의 일부로 봄 ('부업' ≠ 대부업·정부업무)
+  LR.hasWord = (text, k) => {
+    if (!k) return false;
+    if (k.length > 2) return text.includes(k);
+    for (let i = text.indexOf(k); i >= 0; i = text.indexOf(k, i + 1)) {
+      if (i === 0 || !/[가-힣]/.test(text[i - 1])) return true;
+    }
+    return false;
+  };
   const short = (org) => (org || "").split(" ").slice(1).join(" ") || org;
 
   // 맞으면 {why:[이유…], strong} — strong: 지역·지켜보는 법령·낱말·분야 팩처럼 분명한 이유
@@ -19,7 +28,7 @@
     const on = (p.interests || []).filter((x) => x.on);
     const topics = (r.topics || "").split("|"), packs = (r.packs || "").split(",");
     const text = `${r.name} ${r.title || ""}`;
-    const kw = (p.keywords || []).find((k) => text.includes(k));
+    const kw = (p.keywords || []).find((k) => LR.hasWord(text, k));
     if (r.kind === "ordin") {
       const local = { id: "local", label: `우리 동네 · ${short(p.region || p.sido)}` };
       if (p.region && r.org === p.region) return { why: [p.region === p.sido ? `${p.sido} 조례` : `우리 동네(${short(p.region)}) 조례`], strong: true, area: local, kw: null };
