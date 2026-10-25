@@ -68,11 +68,15 @@ const json = (env, obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json; charset=utf-8", ...cors(env) } });
 
 // ── Claude ─────────────────────────────────────────────────────────────
+// Claude 5.x는 생각(thinking)이 기본으로 켜져 있고 max_tokens에 포함됨 → 복잡한 입력이면 생각에 다 써서 답이 잘림
+// 이 Worker의 일(분류·조건 만들기·답 쓰기)은 생각 없이 충분 — Sonnet 5.5는 disabled를 거부해서 between_tools
+const NO_THINK = (model) => model.startsWith("claude-sonnet-5-5") ? { thinking: { type: "between_tools" } }
+  : model.startsWith("claude-haiku-5") ? { thinking: { type: "disabled" } } : {};
 async function claude(env, model, system, user, maxTokens) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] }),
+    body: JSON.stringify({ model, max_tokens: Math.max(maxTokens, 2000), system, messages: [{ role: "user", content: user }], ...NO_THINK(model) }),
   });
   if (!r.ok) throw new Error(`claude ${r.status}`);
   const j = await r.json();
@@ -120,7 +124,7 @@ function numbersOk(answer, items) {
 // 게스트 한도 — 기능마다 따로 센다 (docs: 비공개 PREMIUM.md '등급(안)'). n: 이번에 쓰는 양
 const LIMITS = {                                            // [IP당 하루, 전체 하루] — wrangler 변수로 덮어쓸 수 있음
   ask: ["ASK_PER_IP", 3, "ASK_TOTAL", 300],
-  profile: ["PROFILE_PER_IP", 3, "PROFILE_TOTAL", 200],
+  profile: ["PROFILE_PER_IP", 5, "PROFILE_TOTAL", 200],
   report: ["REPORT_PER_IP", 10, "REPORT_TOTAL", 500],
   rank: ["RANK_PER_IP", 150, "RANK_TOTAL", 5000],
 };
@@ -272,7 +276,7 @@ async function rankCall(env, user) {
     method: "POST",
     headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({ model, max_tokens: 3000, system: RANK_PROMPT, messages: [{ role: "user", content: user }],
-      ...(model.startsWith("claude-sonnet-5-5") ? { thinking: { type: "between_tools" } } : model.startsWith("claude-haiku-5") ? { thinking: { type: "disabled" } } : {}) }),
+      ...NO_THINK(model) }),
   });
   if (!r.ok) throw new Error(`claude ${r.status}`);
   const text = ((await r.json()).content || []).map((b) => b.text || "").join("");
@@ -352,7 +356,7 @@ export default {
       const text = String(body.text || "").trim().slice(0, 300);
       if (text.length < 4) return json(env, { error: "상황을 조금 더 적어 주세요" }, 400);
       const isT = env.TEST_KEY && req.headers.get("x-test-key") === env.TEST_KEY;
-      if (!isT && await quota(env, "profile", ip)) return json(env, { error: "오늘 상황 정리 한도(3번)를 넘었어요. 분야를 직접 골라 주시거나 내일 다시 이용해 주세요." }, 429);
+      if (!isT && await quota(env, "profile", ip)) return json(env, { error: "오늘 상황 정리 한도(5번)를 넘었어요. 분야를 직접 골라 주시거나 내일 다시 이용해 주세요." }, 429);
       try { return json(env, { profile: await profile(env, text) }); }
       catch (e) { return json(env, { error: "상황을 정리하지 못했어요. 분야를 직접 골라 주세요.", detail: isT ? String(e) : undefined }, 502); }
     }
