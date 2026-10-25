@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>개인정보처리방침 | 법레이더</title>
+<meta name="description" content="법레이더 개인정보처리방침 (초안)">
+<meta property="og:site_name" content="법레이더">
+<meta property="og:title" content="개인정보처리방침">
+<meta property="og:description" content="법레이더 개인정보처리방침 (초안)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F8FA; --card:#FFFFFF; --ink:#1D2433; --muted:#626B7E; --rule:#DCE0E7;
+  --ins:#2349C2; --ins-bg:#E7ECFB; --ins-deep:#1A3794; --del:#B4372E; --del-bg:#F9E9E7; --soft:#EEF0F4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12151C; --card:#1A1E27; --ink:#E6E9EF; --muted:#9AA2B3; --rule:#2A303C;
+    --ins:#9DB2FF; --ins-bg:#1D2648; --ins-deep:#C3D0FF; --del:#FF8F84; --del-bg:#3A1F1E; --soft:#20252F;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12151C; --card:#1A1E27; --ink:#E6E9EF; --muted:#9AA2B3; --rule:#2A303C;
+  --ins:#9DB2FF; --ins-bg:#1D2648; --ins-deep:#C3D0FF; --del:#FF8F84; --del-bg:#3A1F1E; --soft:#20252F;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.7 "IBM Plex Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:40rem;margin:0 auto;padding:2.5rem 24px 4rem}
+a{color:var(--ins);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--ins);outline-offset:2px;border-radius:2px}
+.brand{display:inline-flex;align-items:center;gap:.45rem;font:700 1.0625rem/1 "Noto Serif KR",serif;color:var(--ink);text-decoration:none}
+.brand::before{content:"";width:.55rem;height:.55rem;border-radius:50%;background:var(--ins);box-shadow:0 0 0 3px var(--ins-bg)}
+h1{font:700 clamp(1.6rem,6vw,2.1rem)/1.35 "Noto Serif KR",serif;margin:1.75rem 0 .75rem;word-break:keep-all}
+h2{font:700 1.2rem/1.45 "Noto Serif KR",serif;margin:2.5rem 0 .75rem;word-break:keep-all}
+p{word-break:keep-all}
+.lede{color:var(--muted);font-size:.9375rem}
+/* 피라미드: 위가 좁고 아래로 넓어짐 */
+.pyr{list-style:none;margin:1.5rem 0 .5rem;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pyr li{width:var(--w);min-width:13rem;max-width:100%;background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:.65rem .9rem;text-align:center}
+.pyr li b{display:block;font-size:1rem}
+.pyr li span{display:block;font-size:.8125rem;color:var(--muted);line-height:1.5}
+.pyr li.key{border:1.5px solid var(--ins);background:var(--ins-bg)}
+.pyr li.key span{color:var(--ins-deep)}
+.pyr .gap{width:100%;border:0;border-top:1px dashed var(--rule);margin:.5rem 0 .25rem}
+.legend{font-size:.8125rem;color:var(--muted);text-align:center;margin:0}
+.tbl{width:100%;border-collapse:collapse;font-size:.9rem;margin:.5rem 0}
+.tbl th,.tbl td{text-align:left;padding:.55rem .5rem;border-top:1px solid var(--rule);vertical-align:top}
+.tbl th{font-weight:600;white-space:nowrap}
+.tbl td small{display:block;color:var(--muted);font-size:.8125rem}
+.wrap{overflow-x:auto}
+.ex{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:1rem 1.1rem;margin:1rem 0}
+.ex h3{margin:0 0 .6rem;font-size:1rem}
+.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.flow li{position:relative;padding:.1rem 0 .9rem 1.4rem;font-size:.9375rem}
+.flow li::before{content:"";position:absolute;left:.3rem;top:.55rem;width:.5rem;height:.5rem;border-radius:50%;background:var(--ins)}
+.flow li::after{content:"";position:absolute;left:.52rem;top:1.15rem;bottom:0;width:2px;background:var(--rule)}
+.flow li:last-child::after{display:none}
+.flow small{display:block;color:var(--muted);font-size:.8125rem}
+del{color:var(--del);background:var(--del-bg);padding:0 .15em;border-radius:2px}
+ins{color:var(--ins);background:var(--ins-bg);text-decoration:none;padding:0 .15em;border-radius:2px}
+.note{background:var(--soft);border-radius:12px;padding:.9rem 1rem;font-size:.9375rem}
+.note ul{margin:.3rem 0 0;padding-left:1.1rem}
+.cta{display:flex;align-items:center;justify-content:center;min-height:52px;margin-top:2rem;background:var(--ink);color:var(--paper);border-radius:14px;font-weight:600;text-decoration:none}
+footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
+
+.draft{background:var(--del-bg);color:var(--del);border-radius:12px;padding:.75rem 1rem;font-size:.875rem;margin:1rem 0}
+.chk{display:inline-block;font-size:.75rem;font-weight:600;color:var(--del);border:1px solid var(--del);border-radius:999px;padding:0 .45rem;margin-left:.25rem;vertical-align:1px}
+.faq details{border-top:1px solid var(--rule);padding:.75rem 0}.faq details:last-child{border-bottom:1px solid var(--rule)}
+.faq summary{cursor:pointer;font-weight:600}.faq p,.faq ul{margin:.5rem 0 0;color:var(--ink)}
+ol.terms{padding-left:1.25rem}ol.terms li{margin:.35rem 0}
+.contact textarea,.contact input{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:.75rem .9rem;width:100%}
+.contact textarea{min-height:8rem;resize:vertical}
+.contact label{display:block;font-size:.875rem;font-weight:600;margin:1rem 0 .4rem}
+.contact button{margin-top:1rem;width:100%;min-height:52px;border:0;border-radius:14px;background:var(--ink);color:var(--paper);font:inherit;font-weight:600;cursor:pointer}
+.contact .msg{font-size:.875rem;margin:.75rem 0 0}
+.foot-links{display:flex;flex-wrap:wrap;gap:.35rem .9rem;margin-top:.5rem}.foot-links a{color:var(--muted)}
+.beta{display:inline-block;font:600 .6875rem/1 "IBM Plex Sans KR",sans-serif;color:var(--ins);border:1px solid var(--ins);border-radius:999px;padding:.2rem .45rem;margin-left:.4rem;vertical-align:2px}
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="./">법레이더</a><span class="beta">베타</span>
+
+  <h1>개인정보처리방침</h1>
+  <div class="draft"><b>초안이에요.</b> 법률 검토 전이라 내용이 바뀔 수 있어요.</div>
+  <p>법레이더는 서비스에 꼭 필요한 정보만 다루고, 회원 가입 없이 쓸 수 있게 만들었어요. 내 조건·관심 표시는 <b>내 기기 브라우저에만</b> 저장돼요.</p>
+
+  <h2>1. 다루는 정보와 목적·보관 기간</h2>
+  <div class="wrap"><table class="tbl">
+    <tr><th>정보</th><th>언제·왜</th><th>보관</th></tr>
+    <tr><td>상황 글</td><td>'내 맞춤 피드 만들기', 관련 변화 고르기(AI 재판정)<small>AI 처리를 위해 Anthropic으로 보냄</small></td><td>법레이더 서버에 저장하지 않음 <small>내 기기 브라우저에만 저장</small></td></tr>
+    <tr><td>질문 내용</td><td>'바뀐 것 물어보기' 답변<small>AI 처리를 위해 Anthropic으로 보냄</small></td><td>저장하지 않음</td></tr>
+    <tr><td>조건·관심 표시·AI 판정 결과</td><td>내 타임라인 보여 주기</td><td>내 기기 브라우저에만 <small>관심 표시는 항목별 횟수만 익명으로 집계</small></td></tr>
+    <tr><td>이메일·조건</td><td>알림 신청 시, 알림 발송</td><td>신청 철회 때까지</td></tr>
+    <tr><td>IP 주소</td><td>하루 이용 한도 계산(남용 방지)</td><td>2일 뒤 자동 삭제</td></tr>
+    <tr><td>신고·문의 내용과 (선택) 이메일</td><td>요약 오류 확인, 답변</td><td>처리가 끝나면 삭제</td></tr>
+    <tr><td>이용 기록</td><td>기능별 이용 횟수·성공 여부·처리 시간·비용 집계 <small>상황 글·질문 같은 내용은 남기지 않음</small></td><td>집계 3일, 요약 통계는 계속 <small>Cloudflare 실행 기록에 접속 정보가 며칠 남을 수 있음</small><span class="chk">확인 필요</span></td></tr>
+  </table></div>
+  <p>쿠키를 쓰지 않아요. 브라우저 저장소에 둔 정보는 브라우저 설정에서 사이트 데이터를 지우면 함께 지워져요.</p>
+
+  <h2>2. 처리를 맡기는 곳·국외 이전</h2>
+  <div class="wrap"><table class="tbl">
+    <tr><th>받는 곳</th><th>하는 일</th><th>옮기는 정보</th></tr>
+    <tr><td>Anthropic, PBC (미국)</td><td>AI 처리(조건 만들기·관련 변화 고르기·질문 답변)</td><td>상황 글, 질문, 사는 곳 — 요청할 때마다 네트워크로 전송<small>보관·이용 방침은 Anthropic 정책을 따름</small><span class="chk">확인 필요</span></td></tr>
+    <tr><td>Cloudflare, Inc. (미국 등)</td><td>서버 기능 실행, 한도·집계 저장, 파일 저장</td><td>IP 주소, 알림 신청 이메일·조건, 신고·문의 내용</td></tr>
+    <tr><td>GitHub, Inc. (미국)</td><td>웹페이지 제공</td><td>접속 기록(IP 등)</td></tr>
+  </table></div>
+  <p>국외 이전을 원하지 않으면 상황 글 대신 '분야를 직접 고를게요'로 쓰실 수 있어요(이 경우 AI로 보내지 않아요).<span class="chk">확인 필요</span></p>
+
+  <h2>3. 이용자의 권리</h2>
+  <p>알림 신청 정보와 보내신 문의를 보거나 고치거나 지워 달라고 요청할 수 있어요. <a href="about.html#contact">문의 양식</a>으로 알려 주세요. 브라우저에 저장된 정보는 직접 지울 수 있어요.</p>
+
+  <h2>4. 안전하게 지키기</h2>
+  <p>보관하는 정보는 접근 권한을 운영자로 제한하고, 전송은 암호화(HTTPS)해요. 필요 없어진 정보는 위의 기간에 맞춰 지워요.</p>
+
+  <h2>5. 만 14세 미만</h2>
+  <p>회원 가입을 받지 않으며, 만 14세 미만 아동의 알림 신청은 받지 않아요.<span class="chk">확인 필요</span></p>
+
+  <h2>6. 책임자·바뀌는 경우</h2>
+  <p>개인정보 보호책임자: [운영자 이름]<span class="chk">확인 필요</span> · 연락: <a href="about.html#contact">문의 양식</a><br>
+  이 방침이 바뀌면 시행 7일 전에 이 페이지에 알려요. 시행일: [정식 공개일]<span class="chk">확인 필요</span></p>
+  <footer>법레이더 (공개 베타) · 자료: 국가법령정보센터 공동활용 API
+    <div class="foot-links"><a href="about.html">소개·자주 묻는 질문</a><a href="terms.html">이용약관</a><a href="privacy.html"><b>개인정보처리방침</b></a><a href="about.html#contact">문의</a></div></footer>
+</main>
+</body>
+</html>

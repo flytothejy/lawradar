@@ -361,7 +361,7 @@ def render(it, history, pack_names, reported=False):
 {report_html(it["key"])}
 <div class="btns"><a class="btn" href="{e(it['url'])}" rel="noopener">원문 보기</a>{'<a class="btn dark" href="#hist">이 ' + ('조례' if it['kind'] == 'ordin' else '법령') + ' 변화 이력</a>' if hist else '<a class="btn dark" id="alert-btn" href="../#/">바뀌면 알림 받기</a>'}</div>
 {('<h2 id="hist">이 ' + ('조례' if it['kind'] == 'ordin' else '법령') + '의 다른 변경</h2><ul class="hist">' + ''.join(f'<li>{_ymd(h["announced"])} · <a href="{e(h["href"])}">{e(h["title"])}</a></li>' for h in hist[:12]) + '</ul>') if hist else ''}
-<footer>자동으로 만든 요약이에요. 중요한 결정 전에는 원문을 확인하세요. 개인 상황에 맞는 판단은 전문가에게 확인하세요. 자료: 국가법령정보센터 공동활용 API.</footer>
+<footer>법레이더 공개 베타 · 자동으로 만든 요약이에요. 중요한 결정 전에는 원문을 확인하세요. 개인 상황에 맞는 판단은 전문가에게 확인하세요. 자료: 국가법령정보센터 공동활용 API.<br><span class="foot-links"><a href="../about.html">소개·자주 묻는 질문</a> · <a href="../terms.html">이용약관</a> · <a href="../privacy.html"><b>개인정보처리방침</b></a> · <a href="../about.html#contact">문의</a></span></footer>
 <script type="application/json" id="lr-item">{row_json}</script>
 <script src="../match.js"></script>
 <script>
@@ -421,7 +421,7 @@ def _head(title, desc, url, depth=1):
 
 FOOT = """<h2>이 지역 조례가 바뀌면</h2>
 <p class="meta">알림 받기는 준비 중이에요. 곧 이메일·텔레그램으로 받을 수 있어요.</p>
-<footer>자동으로 정리한 내용이라 빠지거나 틀릴 수 있어요. 개인 상황에 맞는 판단은 전문가에게 확인하세요. 자료: 국가법령정보센터 공동활용 API.</footer>
+<footer>법레이더 공개 베타 · 자동으로 정리한 내용이라 빠지거나 틀릴 수 있어요. 개인 상황에 맞는 판단은 전문가에게 확인하세요. 자료: 국가법령정보센터 공동활용 API.<br><span class="foot-links"><a href="../about.html">소개·자주 묻는 질문</a> · <a href="../terms.html">이용약관</a> · <a href="../privacy.html"><b>개인정보처리방침</b></a> · <a href="../about.html#contact">문의</a></span></footer>
 </main></body></html>"""
 
 

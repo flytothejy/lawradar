@@ -243,12 +243,14 @@ dialog#fbd::backdrop{background:rgba(10,14,22,.45)}
 .ex[hidden]{display:none}
 .ex b{font-size:.75rem;font-weight:600;color:var(--ins)}
 .ex:hover{border-color:var(--ins)}.ex:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.beta{display:inline-block;font:600 .6875rem/1 "IBM Plex Sans KR",sans-serif;color:var(--ins);border:1px solid var(--ins);border-radius:999px;padding:.2rem .45rem;margin-left:.4rem;vertical-align:2px}
+.foot-links a{color:var(--muted)}
 footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
 </style>
 </head>
 <body>
 <main>
-  <a class="brand" href="#/">법레이더</a>
+  <a class="brand" href="#/">법레이더</a><span class="beta">베타</span>
 
   <!-- 1. 상황 입력 -->
   <section id="v-main" hidden>
@@ -394,7 +396,7 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
   </dialog>
   <div class="toast" id="toast" role="status" hidden></div>
 
-  <footer>자료: 국가법령정보센터 공동활용 API. 자동으로 정리한 내용이라 빠지거나 틀릴 수 있어요. 중요한 결정 전에는 원문을 확인하세요.</footer>
+  <footer>법레이더는 공개 베타예요. 자료: 국가법령정보센터 공동활용 API. 자동으로 정리한 내용이라 빠지거나 틀릴 수 있어요. 중요한 결정 전에는 원문을 확인하세요. 내 경우에 해당하는지는 판정하지 않아요.<br><span class="foot-links"><a href="about.html">소개·자주 묻는 질문</a> · <a href="terms.html">이용약관</a> · <a href="privacy.html"><b>개인정보처리방침</b></a> · <a href="about.html#contact">문의</a></span></footer>
 </main>
 <script src="match.js"></script>
 <script>
