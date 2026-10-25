@@ -251,6 +251,11 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
       <span class="k">하는 일</span>
       <input type="text" id="pf-job" maxlength="60" placeholder="예: 숙박업 (펜션) · 소상공인" style="padding:.55rem .7rem;border-radius:8px">
     </div>
+    <div style="margin-bottom:1.25rem">
+      <span class="sec-k">이런 분께 닿는 변화를 골라요</span>
+      <div class="tags" id="pf-aud"></div>
+      <div class="tag-add"><select id="pf-aud-add" aria-label="대상 추가"><option value="">+ 해당하는 것 더하기</option></select></div>
+    </div>
     <fieldset>
       <legend>챙겨 볼 분야</legend>
       <div id="pf-ints"></div>
@@ -359,6 +364,8 @@ let API = "", REGIONS = [], VOCAB_T = [], TL = null, DRAFT = null;
 const cfg = getJSON("config.json").then(c => { API = (c.ask || "").replace(/\/ask$/, ""); }).catch(() => {});
 const regions = getJSON("regions.json").then(r => { REGIONS = r; }).catch(() => {});
 const topicsP = getJSON("api/topics.json").then(t => { VOCAB_T = t; }).catch(() => {});
+let AUD_G = [];
+const audP = getJSON("api/audience.json").then(g => { AUD_G = g; }).catch(() => {});
 const tlP = () => TL ? Promise.resolve(TL) : getJSON("api/timeline.json").then(d => {
   TL = {...d, rows: d.rows.map(r => Object.fromEntries(d.cols.map((k, i) => [k, r[i]])))}; return TL;
 });
@@ -407,7 +414,7 @@ $("#sitf").addEventListener("submit", async e => {
 // ── 2. 이렇게 이해했어요 ───────────────────────────────────
 let PF = null;
 async function showProfile(qs){
-  await Promise.all([regions, topicsP]);
+  await Promise.all([regions, topicsP, audP]);
   if (qs.get("manual")) PF = {who:"", region:null, sido:null, job:"", interests:[], laws:[], keywords:[], text:""};
   else PF = structuredClone(DRAFT || LR.load() || {who:"", region:null, sido:null, job:"", interests:[], laws:[], keywords:[], text:""});
   DRAFT = null;
@@ -423,8 +430,16 @@ async function showProfile(qs){
   sidoNote();
   $("#pf-job").value = PF.job || "";
   drawInts(manual);
-  drawTags("laws"); drawTags("keywords");
+  drawTags("laws"); drawTags("keywords"); drawAud();
 }
+function drawAud(){
+  PF.aud = PF.aud || [];
+  $("#pf-aud").innerHTML = PF.aud.map((x, i) => `<span class="tag">${esc(x)}<button type="button" aria-label="${esc(x)} 빼기" data-i="${i}">×</button></span>`).join("")
+    || `<span class="hint" style="margin:0">아래에서 해당하는 것을 골라 주세요 (예: 세입자, 음식점·카페)</span>`;
+  $("#pf-aud").onclick = e => { if (e.target.dataset.i != null) { PF.aud.splice(+e.target.dataset.i, 1); drawAud(); } };
+  $("#pf-aud-add").innerHTML = `<option value="">+ 해당하는 것 더하기</option>` + AUD_G.map(g => `<optgroup label="${esc(g.name)}">${g.tags.filter(x => !PF.aud.includes(x)).map(x => `<option>${esc(x)}</option>`).join("")}</optgroup>`).join("");
+}
+$("#pf-aud-add").onchange = e => { const v = e.target.value; if (v && !PF.aud.includes(v)) { PF.aud.push(v); PF.v = 2; } drawAud(); };
 function fillSgg(){
   const s = $("#pf-sido").value, sub = REGIONS.filter(r => r.sido === s && r.org !== s);
   $("#pf-sgg").innerHTML = `<option value="">${s ? "시·군·구 (시·도 전체)" : "시·군·구"}</option>` + sub.map(r => `<option value="${esc(r.org)}">${esc(r.org.split(" ").slice(1).join(" "))}</option>`).join("");
@@ -470,7 +485,7 @@ $("#pf-go").onclick = () => {
   const s = $("#pf-sido").value, g = $("#pf-sgg").value;
   PF.sido = s || null; PF.region = g || s || null; PF.job = $("#pf-job").value.trim();
   PF.interests = PF.interests.filter(i => !i.extra);
-  if (!PF.region && !PF.interests.some(i => i.on) && !PF.laws.length && !PF.keywords.length) { alertMsg("지역이나 분야를 하나 이상 골라 주세요."); return; }
+  if (!PF.region && !PF.interests.some(i => i.on) && !PF.laws.length && !PF.keywords.length && !(PF.aud || []).length) { alertMsg("지역이나 분야를 하나 이상 골라 주세요."); return; }
   if (!PF.who) PF.who = PF.job || (PF.region ? PF.region.split(" ").pop() + " 주민" : "나");
   LR.save(PF); location.hash = "#/timeline";
 };
@@ -493,7 +508,7 @@ function tlCompute(d, p, f){
   }
   const starred = d.rows.filter(r => f.star[r.key]).map(r => ({...r, m: LR.match(r, p) || {why: ["관심 있음으로 표시"], area: null}}));
   // 분야 순서: 프로필의 관심 분야 순 → 지켜보는 법령 → 관심 낱말 → 우리 동네
-  const order = [...(p.interests || []).filter(x => x.on).map(x => x.topic), "laws", "kw", "local"];
+  const order = [...(p.interests || []).filter(x => x.on).flatMap(x => [x.topic + ":" + x.label, x.topic]), "laws", "kw", "local"];
   const areas = new Map();
   for (const r of hits) { const a = r.m.area || {id: "etc", label: "그 밖"}; const o = areas.get(a.id) || {...a, n: 0, soon: 0}; o.n++; if (r.effective > TODAY) o.soon++; areas.set(a.id, o); }
   const al = [...areas.values()].sort((a, b) => (order.indexOf(a.id) + 1 || 99) - (order.indexOf(b.id) + 1 || 99));
@@ -539,8 +554,21 @@ function chainCard(g, when){
 }
 const render = (list, when, opt) => chains(list).map(g => g.items.length > 1 ? chainCard(g, when) : ev(g.items[0], when, opt)).join("");
 
+// 예전 조건(꼬리표 없음)은 처음 입력한 상황 글로 한 번 다시 만들어 꼬리표만 더함 — 사용자가 고친 지역·법령·낱말은 그대로
+async function upgradeProfile(p){
+  if (!p || p.v >= 2 || !p.text || p.upTried) return p;
+  p.upTried = 1; LR.save(p);
+  try {
+    await cfg; if (!API) return p;
+    const r = await fetch(API + "/profile", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({text: p.text})});
+    const o = (await r.json()).profile; if (!o || !o.aud) return p;
+    const byTopic = new Map((o.interests || []).map(x => [x.topic, x.aud || []]));
+    const q = {...p, aud: o.aud, v: 2, interests: (p.interests || []).map(x => ({...x, aud: x.aud || byTopic.get(x.topic) || []}))};
+    LR.save(q); return q;
+  } catch (e) { return p; }
+}
 async function showTimeline(qs){
-  const p = LR.load(), body = $("#tl-body"), f = LR.fb();
+  const p = await upgradeProfile(LR.load()), body = $("#tl-body"), f = LR.fb();
   TL_AREA = (qs && qs.get("a")) || "";
   body.innerHTML = `<p class="empty">불러오는 중…</p>`;
   let d;
@@ -581,7 +609,7 @@ async function showTimeline(qs){
         ${more ? `<a class="more" href="#/timeline?a=${encodeURIComponent(a.id)}">${more}건 더 보기</a>` : ""}</section>`;
     }
     if (!hits.length) html += `<p class="empty">최근 90일 동안 조건에 맞는 변경이 없어요. <a href="#/profile">조건을 넓혀 보세요.</a></p>`;
-    if (weak.length) html += `<details class="weak"><summary>분야만 겹치는 변경 ${weak.length}건</summary>${weak.sort((a, b) => b.announced.localeCompare(a.announced)).slice(0, 40).map(r => ev(r, r.effective > TODAY ? "soon" : "recent")).join("")}</details>`;
+    if (weak.length) html += `<details class="weak"><summary>${LR.v2({tagged: 1}, p) ? "그 밖에 고른 법령·낱말·우리 동네에 걸린 변경" : "분야만 겹치는 변경"} ${weak.length}건</summary>${weak.sort((a, b) => b.announced.localeCompare(a.announced)).slice(0, 40).map(r => ev(r, r.effective > TODAY ? "soon" : "recent")).join("")}</details>`;
     html += `<h2>의견 받는 중</h2><p class="empty" style="padding-top:.25rem">입법예고를 연결하면 시행 전에 의견을 낼 수 있는 개정안이 여기 나와요. (준비 중)</p>`;
   }
   body.innerHTML = html + tail;

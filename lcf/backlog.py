@@ -198,12 +198,15 @@ def count(now=None):
     return c
 
 
-def run(minutes=300, limit=None, dry=False, days=DAYS_MAX, max_usd=0.0):
+def run(minutes=300, limit=None, dry=False, days=DAYS_MAX, max_usd=0.0, state_f=None, enrich_stage=True):
+    STATE_F = state_f or STATE / "backlog.json"   # 매일 실행은 따로 (state/daily_batch.json)
     t0 = time.time()
     deadline = t0 + minutes * 60 - 15 * 60                 # 저장·올리기 시간 15분 남김
     now = today()
     st = read_json(STATE_F, {"stage": "enrich", "batches": [], "done": 0, "usd": 0.0})
-    if (st.get("days") != days or st["stage"] == "done") and not limit:   # 구간이 바뀌거나 끝난 뒤 다시 실행하면 보강부터 (끝낸 항목은 건너뜀)
+    if not enrich_stage:                                     # 매일 실행: 보강은 수집에서 이미 함
+        st["days"] = days; st["stage"] = "gen"
+    elif (st.get("days") != days or st["stage"] == "done") and not limit:   # 구간이 바뀌거나 끝난 뒤 다시 실행하면 보강부터 (끝낸 항목은 건너뜀)
         st["days"] = days
         st["stage"] = "enrich"
     win = st.setdefault("windows", {}).setdefault(str(days), {"done": 0, "usd": 0.0})
@@ -323,3 +326,11 @@ def run(minutes=300, limit=None, dry=False, days=DAYS_MAX, max_usd=0.0):
         sync.push()
         if limit or time.time() > deadline:
             return 3 if not limit else 0
+
+
+def daily(minutes=55):
+    """매일 실행의 쉬운 말 정리 — 과거분과 같은 배치(Haiku 생성 + Sonnet 전수 검토, 반값). 최근 12일 범위.
+    배치가 시간 안에 안 끝나면 다음 매일 실행에서 결과를 받음 (그때까지는 원문만 보임)"""
+    if os.environ.get("LCF_DAILY_MODE") == "realtime":        # 되돌리기: 예전 방식(Sonnet 실시간)
+        llm.run(); return 0
+    return run(minutes=minutes, days=12, state_f=STATE / "daily_batch.json", enrich_stage=False)

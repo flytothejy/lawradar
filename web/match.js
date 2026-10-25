@@ -51,6 +51,65 @@
     return why.length ? { why: [...new Set(why)], strong, area, kw: kw || null } : null;
   };
 
+  // ── 관련도 v2: 꼬리표 맞추기 (docs/RELEVANCE.md) ─────────────────────
+  // 변경(r.aud·r.act)과 조건(p.aud, 분야별 aud)이 같은 꼬리표 목록을 씀. 둘 다 있을 때만 쓰고, 없으면 예전 방식(LR.match1)
+  const BROAD = new Set(["직장인", "소상공인", "중소기업", "고용주", "법인", "학생·청소년", "청년", "노인", "1인 가구", "학부모"]);
+  const ACTION = ["받을 것", "해야 할 것", "하면 안 되는 것", "계산이 바뀌는 것", "권리가 바뀌는 것"];
+  LR.effAud = (p) => {                                       // 사람 꼬리표에서, 끈 분야에만 있던 것은 뺌
+    const on = (p.interests || []).filter((x) => x.on), off = (p.interests || []).filter((x) => !x.on);
+    const offOnly = new Set(off.flatMap((x) => x.aud || []));
+    on.forEach((x) => (x.aud || []).forEach((t) => offOnly.delete(t)));
+    return new Set((p.aud || []).filter((t) => !offOnly.has(t)));   // 분야별 aud는 칸 나누기에만 (사람 꼬리표 밖은 더하지 않음)
+  };
+  LR.v2 = (r, p) => !!(+r.tagged && p && p.aud && p.aud.length);
+  LR.match2 = (r, p) => {
+    const aud = (r.aud || "").split("|").filter(Boolean), act = (r.act || "").split("|").filter(Boolean);
+    const internal = !aud.length && (act.includes("행정 내부") || !act.length);
+    if (!aud.length && !internal) {                           // 꼬리표를 못 붙였지만 할 일이 있는 변경 — 예전 규칙으로, 낱말만 맞으면 약하게
+      const m1 = match1(r, p);
+      if (m1 && m1.strong && !m1.why.some((w) => !w.startsWith("관심 낱말"))) m1.strong = false;
+      return m1;
+    }
+    const pa = LR.effAud(p), hit = aud.filter((t) => pa.has(t));
+    const doing = act.some((a) => ACTION.includes(a));
+    const text = `${r.name} ${r.title || ""}`;
+    const kw = (p.keywords || []).find((k) => LR.hasWord(text, k));
+    const law = r.base && (p.laws || []).includes(r.base);
+    const on = (p.interests || []).filter((x) => x.on);
+    const areaOf = () => {
+      const it = on.find((x) => (x.aud || []).some((t) => hit.includes(t)));
+      return it ? { id: it.topic + ":" + it.label, label: it.label } : { id: "aud:" + hit[0], label: hit[0] };
+    };
+    const whyAud = hit.length ? [`${hit.slice(0, 2).join("·")}에게 닿는 변화`] : [];
+    if (r.kind === "ordin") {
+      const local = { id: "local", label: `우리 동네 · ${short(p.region || p.sido)}` };
+      if (internal) return null;                              // 의회·위원회·기관 운영 같은 조례는 보이지 않음
+      if (p.region && r.org === p.region) {
+        if (hit.length)
+          return { why: [p.region === p.sido ? `${p.sido} 조례` : `우리 동네(${short(p.region)}) 조례`, ...whyAud], strong: true, area: local, kw: kw || null };
+        return { why: [`우리 동네(${short(p.region)}) 조례`], strong: false, area: local, kw: kw || null };   // '지역 주민 누구나'도 접힌 칸
+      }
+      if (p.sido && r.org === p.sido && hit.length) return { why: [`${p.sido} 조례`, ...whyAud], strong: true, area: local, kw: kw || null };
+      return null;
+    }
+    if (internal) return null;
+    // 넓은 꼬리표(직장인·소상공인 등)만 겹치면: 변경이 그 무리를 콕 집고(꼬리표 2개 이하) 실제 할 일이 있을 때만 본문
+    const specific = hit.some((t) => !BROAD.has(t));
+    const focused = aud.length <= 2 && act.some((a) => a !== "절차가 바뀌는 것" && a !== "행정 내부");
+    if (hit.length && (!act.length || (!specific && !focused))) return { why: whyAud, strong: false, area: null, kw: kw || null };
+    if (hit.length) {
+      const why = [...whyAud]; if (law) why.unshift(`지켜보는 법령: ${r.base}`); if (kw) why.push(`관심 낱말: ${kw}`);
+      return { why, strong: true, area: areaOf(), kw: kw || null };
+    }
+    // 대상은 안 겹치지만 내가 고른 법령·낱말 — 아래 '그 밖에' 접힌 칸으로
+    if (law || kw || (aud.includes("국민 누구나") && doing))
+      return { why: [law ? `지켜보는 법령: ${r.base}` : kw ? `관심 낱말: ${kw}` : "모두에게 닿는 변화"], strong: false, area: null, kw: kw || null };
+    return null;
+  };
+  const match1 = LR.match;
+  LR.match1 = match1;
+  LR.match = (r, p) => (LR.v2(r, p) ? LR.match2(r, p) : match1(r, p));
+
   // 쉬운 종류 표시 — 누가 바꾼 것인지 (guide.html '법은 이렇게 생겼어요'와 같은 말)
   LR.kind = (r) => {
     if (r.kind === "law") return r.type === "법률" ? { t: "국회가 바꾼 법", c: "b-law" } : { t: "정부 세부 기준", c: "b-dec" };

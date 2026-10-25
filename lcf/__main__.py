@@ -35,9 +35,11 @@ def main(a):
         from . import collect
         collect.run(_opt(a, "--from", D), _opt(a, "--to", D), seed="--seed" in a)
     elif cmd == "daily":
-        from . import collect, build, notify
-        from . import llm
-        collect.run(); llm.run(); build.run()
+        from . import collect, build, notify, backlog, tag
+        collect.run()
+        backlog.daily()                                   # 쉬운 말: 배치(반값) — LCF_DAILY_MODE=realtime이면 예전 방식
+        tag.run(days=14, rt=True)                         # 관련도 꼬리표: 새 항목만, 실시간 Haiku (하루 수 센트)
+        build.run()
         if "--no-notify" not in a:
             notify.daily()
     elif cmd == "digest":
