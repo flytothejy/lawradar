@@ -218,7 +218,7 @@ async function profile(env, text) {
   const idx = await loadIndex(env).catch(() => null);
   const region = pickRegion(v, o.region);
   const okAud = new Set((v.aud || []).flatMap((g) => g.tags));
-  const aud = [...new Set((o.aud || []).map(String).filter((x) => okAud.has(x)))].slice(0, 8);
+  const aud = [...new Set((o.aud || []).map(String).filter((x) => okAud.has(x) && !x.endsWith("누구나")))].slice(0, 8);   // '누구나'는 변경 쪽 꼬리표
   const interests = (o.interests || []).filter((x) => x && okTopic.has(x.topic)).slice(0, 7)
     .map((x) => ({ label: String(x.label || x.topic).slice(0, 40), topic: x.topic, on: x.on !== false,
       aud: (x.aud || []).map(String).filter((t) => okAud.has(t)).slice(0, 3) }));
