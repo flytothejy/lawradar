@@ -110,7 +110,10 @@ def call(model, system, user, max_tokens=8000, tries=4):
                 m = j.get("usageMetadata") or {}
                 return "".join(p.get("text", "") for p in parts), {"input_tokens": m.get("promptTokenCount", 0),
                                                                     "output_tokens": m.get("candidatesTokenCount", 0) + m.get("thoughtsTokenCount", 0)}
-            return "".join(b.get("text", "") for b in j.get("content", [])), j.get("usage", {})
+            txt = "".join(b.get("text", "") for b in j.get("content", []))
+            if not txt.strip():                                  # 빈 답: 원인(stop_reason·블록 종류)을 남김
+                log(f"  빈 응답 {model}: stop={j.get('stop_reason')} blocks={[b.get('type') for b in j.get('content', [])]} usage={j.get('usage')}")
+            return txt, j.get("usage", {})
         except requests.RequestException as e:
             err = repr(e); time.sleep(3 * (i + 1))
     raise RuntimeError(f"{model} 실패: {err}")
