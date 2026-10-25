@@ -45,6 +45,8 @@ def run():
     pk = [packs.load(i) for i in packs.all_ids()]                 # 조건 화면에서 고를 수 있는 분야
     write_json(SITE / "api" / "topics.json", [{"id": x["id"], "name": x["name"]} for x in pk] +
                [{"id": k, "name": k} for k in config("classify")["topics"] if k not in config("classify").get("life_exclude", [])])
+    write_json(SITE / "api" / "audience.json", [{"name": g["name"], "tags": [x for x, _ in g["tags"]]}   # 조건 화면 '이런 분께'
+                                                for g in config("audience")["groups"] if g["name"] != "누구나"])
     ask = (DATA / "state" / "ask_url.txt")
     write_json(SITE / "config.json", {"ask": ask.read_text().strip() if ask.exists() else ""})
     write_json(SITE / "api" / "profiles.json", [{"id": p["id"], "name": p["name"]} for p in config("profiles").get("profiles", [])])

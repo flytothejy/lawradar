@@ -9,7 +9,7 @@ const gold = JSON.parse(fs.readFileSync(path.join(__dirname, 'gold.json')));
 let T = { s: 0, s2: 0, s1: 0, g2: 0, g1: 0, h2: 0, h1: 0 };
 const lines = [];
 for (let i = 1; i <= 9; i++) {
-  const p = JSON.parse(fs.readFileSync(path.join(__dirname, `p${i}.json`))).profile;
+  const p = JSON.parse(fs.readFileSync(path.join(__dirname, `p${i}${process.argv[4] || ''}.json`))).profile;
   const g = gold[String(i)]; let s = 0, s2 = 0, s1 = 0, g2 = 0, g1 = 0, h2 = 0, h1 = 0;
   for (const [k, lab] of Object.entries(g)) {
     const r = rows.get(k); if (!r) continue;
