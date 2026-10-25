@@ -64,6 +64,11 @@
   LR.match2 = (r, p) => {
     const aud = (r.aud || "").split("|").filter(Boolean), act = (r.act || "").split("|").filter(Boolean);
     const internal = !aud.length && (act.includes("행정 내부") || !act.length);
+    if (!aud.length && !internal) {                           // 꼬리표를 못 붙였지만 할 일이 있는 변경 — 예전 규칙으로, 낱말만 맞으면 약하게
+      const m1 = match1(r, p);
+      if (m1 && m1.strong && !m1.why.some((w) => !w.startsWith("관심 낱말"))) m1.strong = false;
+      return m1;
+    }
     const pa = LR.effAud(p), hit = aud.filter((t) => pa.has(t));
     const doing = act.some((a) => ACTION.includes(a));
     const text = `${r.name} ${r.title || ""}`;
@@ -79,9 +84,9 @@
       const local = { id: "local", label: `우리 동네 · ${short(p.region || p.sido)}` };
       if (internal) return null;                              // 의회·위원회·기관 운영 같은 조례는 보이지 않음
       if (p.region && r.org === p.region) {
-        if (hit.length || aud.includes("지역 주민 누구나"))
+        if (hit.length)
           return { why: [p.region === p.sido ? `${p.sido} 조례` : `우리 동네(${short(p.region)}) 조례`, ...whyAud], strong: true, area: local, kw: kw || null };
-        return { why: [`우리 동네(${short(p.region)}) 조례`], strong: false, area: local, kw: kw || null };
+        return { why: [`우리 동네(${short(p.region)}) 조례`], strong: false, area: local, kw: kw || null };   // '지역 주민 누구나'도 접힌 칸
       }
       if (p.sido && r.org === p.sido && hit.length) return { why: [`${p.sido} 조례`, ...whyAud], strong: true, area: local, kw: kw || null };
       return null;

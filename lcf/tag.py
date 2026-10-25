@@ -42,10 +42,14 @@ SYSTEM = f"""너는 한국 법령·조례 변경을 '누구에게 닿는지'로 
 {" / ".join(f"{a}({d})" for a, d in AUD["acts"])}
 
 규칙
+- 대상은 (1) 새 규정을 지켜야 하는 사람·사업자, (2) 혜택·지원을 받는 사람, (3) 세금·요금 계산이 달라지는 사람이다
+- act가 "행정 내부"가 아니면 aud는 반드시 1개 이상 고른다. 예: 일시적 2주택 비과세 기간 → 다주택자, 1주택자 / 숙박 중개 과태료 → 숙박업 / 아동수당 신청 없이 지급 → 영유아 부모 / 장애인 활동지원 → 장애인·가족 / 침해사고 이용자 통지 의무 → 앱·IT 서비스
 - 제도를 '집행하는 쪽'(공무원·지자체·위원회·공공기관)은 대상이 아니다. 일반인이 할 일이 없으면 aud는 []이고 act는 ["행정 내부"]
+- 업종 이름에 주의: 식품접객업 = 음식점·카페, 즉석판매·식품제조가공업 = 식품 제조·가공, 농어업재해 = 농업과 어업·양식 둘 다, 통신판매(중개)업 = 온라인 판매
 - 건설·공사업처럼 '그 일을 하는 사업자'와 '그 결과물을 쓰는 사람'을 구분한다. 예: 정보통신공사업 규정 → 건설업 (앱·IT 서비스 아님)
 - 넓게 걸칠 수 있다고 다 붙이지 않는다. 이 변경을 알려 주면 "나한테 해당되네" 할 사람만
-- "국민 누구나"는 거의 모든 사람에게 직접 닿을 때만. "지역 주민 누구나"는 조례에서 주민이 쓰거나 내는 것(시설 이용·사용료·주차·생활 지원)일 때만
+- "국민 누구나"는 거의 모든 사람에게 직접 닿을 때만. "지역 주민 누구나"는 조례에서 주민 누구나 직접 돈을 받거나 내거나 이용 조건이 바뀌는 것(사용료·감면·지원금)일 때만. 센터·시설·사업의 설치·운영 근거, 위원회, 홍보·계획 수립은 "행정 내부"
+- 조례도 특정 대상(소상공인·노인·학생·장애인 등)이 분명하면 그 꼬리표를 쓴다
 - 다른 법 개정에 맞춘 용어·조문 정리, 위원회 구성, 의원 국외출장, 기관 설치·운영 같은 것은 ["행정 내부"]
 
 출력: JSON 배열만. [{{"key": "...", "aud": [...], "act": [...]}}, ...] 다른 말은 쓰지 않는다."""
@@ -163,6 +167,13 @@ def _collect(txt, chunk, model):
     return got
 
 
+def _m(model):
+    """'모델:think'이면 생각을 켠 채로(max_tokens 넉넉히) — (모델, thinking 설정, max_tokens)"""
+    if model.endswith(":think"):
+        return model[:-6], None, 8000
+    return model, llm.no_thinking(model), 2000
+
+
 def realtime(keys, model=MODEL, dry=False):
     items = [it for _, it in _load(keys).values()]
     res, usage = {}, {"input_tokens": 0, "output_tokens": 0}
@@ -170,12 +181,13 @@ def realtime(keys, model=MODEL, dry=False):
         chunk = items[i:i + PER_REQ]
         if dry:
             print(SYSTEM[:1500]); print("-----"); print(_user(chunk)[:3000]); return {}
-        txt, u = llm.call(model, SYSTEM, _user(chunk), max_tokens=2000, thinking=llm.no_thinking(model))
+        mm, th, mt = _m(model)
+        txt, u = llm.call(mm, SYSTEM, _user(chunk), max_tokens=mt, thinking=th)
         for k in usage:
             usage[k] += u.get(k, 0)
         res.update(_collect(txt, chunk, model))
     n = _save(res)
-    log(f"꼬리표 {n}/{len(items)}건 ({model}) · 약 ${llm.usd(model, usage):.3f}")
+    log(f"꼬리표 {n}/{len(items)}건 ({model}) · 약 ${llm.usd(_m(model)[0], usage):.3f}")
     return res
 
 
@@ -190,8 +202,8 @@ def batch(keys, model=MODEL, minutes=120):
     if not st.get("cur"):
         items = [it for _, it in _load(keys).values()]
         chunks = [items[i:i + PER_REQ] for i in range(0, len(items), PER_REQ)]
-        th = llm.no_thinking(model)
-        reqs = [{"custom_id": f"c{i}", "params": {"model": model, "max_tokens": 2000, "system": SYSTEM,
+        mm, th, mt = _m(model)
+        reqs = [{"custom_id": f"c{i}", "params": {"model": mm, "max_tokens": mt, "system": SYSTEM,
                                                   "messages": [{"role": "user", "content": _user(c)}],
                                                   **({"thinking": th} if th else {})}} for i, c in enumerate(chunks)]
         if not reqs:
@@ -223,7 +235,7 @@ def batch(keys, model=MODEL, minutes=120):
         if rr.get("type") != "succeeded":
             continue
         m = rr["message"]
-        usd += llm.usd(cur["model"], m.get("usage", {})) / 2
+        usd += llm.usd(_m(cur["model"])[0], m.get("usage", {})) / 2
         txt = "".join(b.get("text", "") for b in m.get("content", []))
         chunk = [{"key": k} for k in by_cid.get(o["custom_id"], [])]
         res.update(_collect(txt, chunk, cur["model"]))
