@@ -1,0 +1,30 @@
+name: rank-eval
+
+# AI 재판정 평가 — tests/relevance/cands.json 후보를 상황 글 기준으로 판정해 아티팩트로 (lcf/rank.py)
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "모델 (뒤에 :think를 붙이면 생각 켬)"
+        default: "claude-sonnet-5-5"
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - run: python -m lcf rank-eval --model "${{ inputs.model }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: labels
+          path: data/lcf/rank/labels.json
+          retention-days: 3

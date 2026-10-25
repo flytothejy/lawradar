@@ -97,6 +97,10 @@ def main(a):
             ks = ",".join(x["key"] for o in j for x in o["items"]) if j and isinstance(j[0], dict) else ",".join(j)
         sys.exit(tag.run(_opt(a, "--days", int, 730), _opt(a, "--limit", int), _opt(a, "--model", str, tag.MODEL),
                          ks.split(",") if ks else None, rt="--realtime" in a, dry="--dry" in a, minutes=_opt(a, "--minutes", int, 120)))
+    elif cmd == "rank-eval":
+        from . import rank
+        rank.evaluate(_opt(a, "--model", str, "claude-sonnet-5-5"), _opt(a, "--cands", str, "tests/relevance/cands.json"),
+                      _opt(a, "--out", str, "data/lcf/rank/labels.json"))
     elif cmd == "bench":
         from . import bench
         bench.run(_opt(a, "--models", str, "claude-sonnet-5-5,claude-haiku-5-5").split(","), _opt(a, "--n", int, 50), _opt(a, "--days", int, 30))
