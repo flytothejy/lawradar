@@ -142,6 +142,9 @@ ol.list{list-style:none;margin:0;padding:0}
 .b-dec{color:var(--ins-deep);background:var(--ins-bg)}
 .b-adm{color:var(--ink2);background:var(--gray-bg)}
 .b-loc{color:var(--loc);background:var(--loc-bg)}
+.b-must{color:var(--del);background:var(--del-bg)}
+.bdgs1{display:inline-flex;flex-wrap:wrap;gap:.3rem}
+.tl-rank{font-size:.8125rem;color:var(--muted);margin:.4rem 0 0}
 .ev{display:grid;grid-template-columns:3.25rem minmax(0,1fr);gap:.75rem;padding:.9rem 0;border-bottom:1px solid var(--rule)}
 .ev .b{display:flex;flex-direction:column;align-items:flex-start;gap:.2rem;min-width:0}
 .ev .t{font-size:.9375rem;font-weight:500;line-height:1.5;color:var(--ink);text-decoration:none;word-break:keep-all}
@@ -280,6 +283,7 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
     <div class="tl-head"><h1>내 타임라인</h1><a href="#/alerts">알림 받기</a></div>
     <p class="tl-sub"><span id="tl-sub"></span> · <a href="#/profile">조건 바꾸기</a></p>
     <div class="tl-fb" id="tl-fb"></div>
+    <p class="tl-rank" id="tl-rank" hidden>내 상황에 맞는지 한 번 더 고르는 중…</p>
     <nav class="areas" id="tl-areas" aria-label="분야"></nav>
     <div id="tl-body"></div>
   </section>
@@ -496,14 +500,33 @@ function alertMsg(t){ const b = $("#pf-go"); const o = b.textContent; b.textCont
 let TL_LIMIT = 30, TL_AREA = "";
 const STAR = `<svg width="15" height="15" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8l2.2 4.5 5 .7-3.6 3.5.9 4.9L10 14l-4.5 2.4.9-4.9-3.6-3.5 5-.7z"/></svg>`;
 const STEP = r => r.kind === "admrul" ? "고시" : r.kind === "ordin" ? r.type : r.type === "법률" ? "법률" : r.type === "대통령령" ? "시행령" : "시행규칙";
-const badge = r => { const k = LR.kind(r); return `<span class="bdg ${k.c}">${esc(k.t)}${r.change === "제정" ? " · 새로 생김" : ""}</span>`; };
+const badge = r => { const k = LR.kind(r); return `<span class="bdgs1">${r.m && r.m.tier === 2 ? `<span class="bdg b-must">꼭 확인</span>` : ""}<span class="bdg ${k.c}">${esc(k.t)}${r.change === "제정" ? " · 새로 생김" : ""}</span></span>`; };
+
+// AI 재판정: 후보 중 아직 판정 안 된 것을 Worker에 보내고, 오면 다시 그림 (조건마다 처음 한 번 + 새 항목만)
+let RANKING = false;
+async function rankMissing(d, p){
+  if (RANKING || !p || !p.text || !LR.v2({tagged: 1}, p)) return;
+  const labels = LR.rankLoad(p);
+  const need = d.rows.filter(r => { const m = LR.match(r, p); return m && m.cand && labels[r.key] === undefined; }).map(r => r.key).slice(0, 90);
+  if (!need.length) return;
+  RANKING = true; $("#tl-rank").hidden = false;
+  try {
+    await cfg; if (!API) return;
+    const r = await fetch(API + "/rank", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({text: p.text, region: p.region, keys: need})});
+    const o = await r.json(); if (!r.ok) return;
+    const next = {...LR.rankLoad(p), ...(o.labels || {})};
+    (o.missing || []).forEach(k => { if (next[k] === undefined) next[k] = 1; });   // 색인에 없는 것(내용 없음)은 규칙대로 보여 줌
+    LR.rankSave(p, next);
+    if (location.hash.startsWith("#/timeline")) route();
+  } catch (e) {} finally { RANKING = false; $("#tl-rank").hidden = true; }
+}
 const hrefOf = r => r.page || r.url, extOf = r => r.page ? "" : ' target="_blank" rel="noopener"';
 
 function tlCompute(d, p, f){
-  const hits = [], weak = [];
+  const hits = [], weak = [], labels = LR.rankLoad(p);
   for (const r of d.rows) {
     if (LR.hidden(r, f) || f.star[r.key]) continue;
-    const m = LR.match(r, p); if (!m) continue;
+    const m = LR.applyRank(LR.match(r, p), labels[r.key]); if (!m) continue;
     (m.strong ? hits : weak).push({...r, m});
   }
   const starred = d.rows.filter(r => f.star[r.key]).map(r => ({...r, m: LR.match(r, p) || {why: ["관심 있음으로 표시"], area: null}}));
@@ -613,6 +636,7 @@ async function showTimeline(qs){
     html += `<h2>의견 받는 중</h2><p class="empty" style="padding-top:.25rem">입법예고를 연결하면 시행 전에 의견을 낼 수 있는 개정안이 여기 나와요. (준비 중)</p>`;
   }
   body.innerHTML = html + tail;
+  rankMissing(d, p);
   const mb = $("#tl-more"); if (mb) mb.onclick = () => { TL_LIMIT += 30; showTimeline(qs); };
   const mg = $("#fb-manage"); if (mg) mg.onclick = () => fbManage(d);
 }

@@ -9,6 +9,9 @@ const gold = JSON.parse(fs.readFileSync(path.join(__dirname, 'gold.json')));
 // 2차 판정(gold2.json): 새 규칙이 새로 보여 준 항목 — 합쳐서 '실제로 보이는 것'의 정밀도를 잼
 try { const g2 = JSON.parse(fs.readFileSync(path.join(__dirname, 'gold2.json'))); for (const [i, m] of Object.entries(g2)) if (i !== 'notes') Object.assign(gold[i] = gold[i] || {}, m); } catch (e) {}
 let unjudged = 0;
+// 5번째 인자: AI 재판정 결과(labels.json, {persona: {key: label}}) — 화면과 같은 LR.applyRank로 반영
+const RL = process.argv[5] ? JSON.parse(fs.readFileSync(process.argv[5])) : null;
+const M = (r, p, i) => RL ? LR.applyRank(LR.match(r, p), (RL[i] || {})[r.key]) : LR.match(r, p);
 let T = { s: 0, s2: 0, s1: 0, g2: 0, g1: 0, h2: 0, h1: 0 };
 const lines = [];
 for (let i = 1; i <= 9; i++) {
@@ -16,11 +19,11 @@ for (let i = 1; i <= 9; i++) {
   const g = gold[String(i)]; let s = 0, s2 = 0, s1 = 0, g2 = 0, g1 = 0, h2 = 0, h1 = 0;
   for (const [k, lab] of Object.entries(g)) {
     const r = rows.get(k); if (!r) continue;
-    const m = LR.match(r, p), strong = !!(m && m.strong);
+    const m = M(r, p, i), strong = !!(m && m.strong);
     if (lab === 2) g2++; if (lab >= 1) g1++;
     if (strong) { s++; if (lab === 2) s2++; if (lab >= 1) s1++; if (lab === 2) h2++; if (lab >= 1) h1++; }
   }
-  for (const r of rows.values()) { const m = LR.match(r, p); if (m && m.strong && !(r.key in g)) unjudged++; }
+  for (const r of rows.values()) { const m = M(r, p, i); if (m && m.strong && !(r.key in g)) unjudged++; }
   lines.push(`${i} 보임 ${s} · 정밀도(≥1) ${s ? (100 * s1 / s).toFixed(0) : '-'}% · 꼭(2) 잡음 ${h2}/${g2} · 관련(≥1) 잡음 ${h1}/${g1}`);
   T.s += s; T.s1 += s1; T.s2 += s2; T.g2 += g2; T.g1 += g1; T.h2 += h2; T.h1 += h1;
 }

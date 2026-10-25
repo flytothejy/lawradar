@@ -4,7 +4,7 @@ name: worker
 on:
   push:
     branches: [main]
-    paths: ["worker/**", "tests/qa_cases.json", "tests/qa_eval.py", ".github/workflows/worker.yml"]
+    paths: ["worker/**", "config/rank_prompt.txt", "tests/qa_cases.json", "tests/qa_eval.py", ".github/workflows/worker.yml"]
   workflow_dispatch:
 
 permissions:
@@ -51,6 +51,8 @@ jobs:
           fi
           [ -n "$KV" ] || { echo "KV 네임스페이스를 만들지 못했어요 (토큰 권한: Workers KV Storage Edit 확인)"; exit 1; }
           sed -e "s/__ACCOUNT__/$ACC/" -e "s/__BUCKET__/$R2_BUCKET/" -e "s/__KV__/$KV/" wrangler.toml.tmpl > wrangler.toml
+      - name: 재판정 프롬프트 넣기 (config/rank_prompt.txt → worker/src/rank_prompt.js)
+        run: node -e "const fs=require('fs');fs.writeFileSync('worker/src/rank_prompt.js','// 생성 파일 — 원본은 config/rank_prompt.txt (worker.yml이 배포 때 다시 만듦)\nexport default '+JSON.stringify(fs.readFileSync('config/rank_prompt.txt','utf8'))+';\n')"
       - name: 배포
         id: dep
         working-directory: worker
