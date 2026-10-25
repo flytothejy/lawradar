@@ -53,6 +53,7 @@
 
   // ── 관련도 v2: 꼬리표 맞추기 (docs/RELEVANCE.md) ─────────────────────
   // 변경(r.aud·r.act)과 조건(p.aud, 분야별 aud)이 같은 꼬리표 목록을 씀. 둘 다 있을 때만 쓰고, 없으면 예전 방식(LR.match1)
+  const BROAD = new Set(["직장인", "소상공인", "중소기업", "고용주", "법인", "학생·청소년", "청년", "노인", "1인 가구", "학부모"]);
   const ACTION = ["받을 것", "해야 할 것", "하면 안 되는 것", "계산이 바뀌는 것", "권리가 바뀌는 것"];
   LR.effAud = (p) => {                                       // 사람 꼬리표에서, 끈 분야에만 있던 것은 뺌
     const on = (p.interests || []).filter((x) => x.on), off = (p.interests || []).filter((x) => !x.on);
@@ -92,6 +93,10 @@
       return null;
     }
     if (internal) return null;
+    // 넓은 꼬리표(직장인·소상공인 등)만 겹치면: 변경이 그 무리를 콕 집고(꼬리표 2개 이하) 실제 할 일이 있을 때만 본문
+    const specific = hit.some((t) => !BROAD.has(t));
+    const focused = aud.length <= 2 && act.some((a) => a !== "절차가 바뀌는 것" && a !== "행정 내부");
+    if (hit.length && (!act.length || (!specific && !focused))) return { why: whyAud, strong: false, area: null, kw: kw || null };
     if (hit.length) {
       const why = [...whyAud]; if (law) why.unshift(`지켜보는 법령: ${r.base}`); if (kw) why.push(`관심 낱말: ${kw}`);
       return { why, strong: true, area: areaOf(), kw: kw || null };

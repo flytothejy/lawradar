@@ -18,7 +18,7 @@ on:
         default: ""
       model:
         description: "모델"
-        default: "claude-haiku-5-5"
+        default: "claude-sonnet-5-5"
 
 permissions:
   contents: read
