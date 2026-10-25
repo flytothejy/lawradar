@@ -48,6 +48,8 @@ jobs:
         run: |
           rm -rf _site && mkdir -p _site
           cp web/*.html web/*.js _site/
+          cp -r web/img _site/img
+          sed -i "s#__SITE__#${SITE_URL}#g" _site/*.html
           cp -r data/lcf/site/. _site/
           cp -r data/lcf/pages/. _site/
       - uses: actions/configure-pages@v5
