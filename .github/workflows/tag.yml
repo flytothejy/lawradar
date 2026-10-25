@@ -1,0 +1,60 @@
+name: tag
+
+# 관련도 꼬리표 (대상·행동 종류) — lcf/tag.py. 과거분은 배치(반값), 끊기면 다음 실행에서 결과를 받음
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "법령·고시 최근 며칠 (조례는 120일 + 시행 전)"
+        default: "730"
+      limit:
+        description: "시험: 이 건수만 (비우면 전체)"
+        default: ""
+      keys:
+        description: "이 항목만 (쉼표로 구분, 비우면 범위 전체)"
+        default: ""
+      keys_file:
+        description: "이 파일의 항목만 (예: tests/relevance/pool.json)"
+        default: ""
+      model:
+        description: "모델"
+        default: "claude-haiku-5-5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lcf-data
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      KEYS: ${{ inputs.keys }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - run: python -m lcf sync pull --all-days
+      - name: tag
+        run: |
+          set +e
+          args="--days ${{ inputs.days }} --model ${{ inputs.model }} --minutes 130"
+          [ -n "${{ inputs.limit }}" ] && args="$args --limit ${{ inputs.limit }}"
+          [ -n "$KEYS" ] && args="$args --keys $KEYS"
+          [ -n "${{ inputs.keys_file }}" ] && args="$args --keys-file ${{ inputs.keys_file }}"
+          python -m lcf tag $args
+          code=$?
+          [ $code -eq 0 ] || [ $code -eq 3 ]
+      - name: push to R2
+        if: always()
+        run: python -m lcf sync push

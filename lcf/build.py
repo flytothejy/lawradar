@@ -80,9 +80,11 @@ def timeline(end):
             rows.append([it["key"], it["kind"], it["name"], BASE.sub("", it["name"]) if it["kind"] == "law" else "", it["type"], it["change"],
                          it["org"], it["announced"], it["effective"], c["level"], "|".join(c["topics"]), int(bool(c.get("life"))),
                          int(bool(c.get("support"))), pk, ai.get("title", ""), (line or "")[:160],
-                         f"c/{slug(it)}.html" if has_content(it) else "", it["url"]])
+                         f"c/{slug(it)}.html" if has_content(it) else "", it["url"],
+                         "|".join((it.get("tags") or {}).get("aud", [])), "|".join((it.get("tags") or {}).get("act", [])),
+                         int(bool(it.get("tags")))])
     rows.sort(key=lambda r: r[7], reverse=True)
     cols = ["key", "kind", "name", "base", "type", "change", "org", "announced", "effective", "level", "topics", "life",
-            "support", "packs", "title", "line", "page", "url"]
+            "support", "packs", "title", "line", "page", "url", "aud", "act", "tagged"]
     write_json(SITE / "api" / "timeline.json", {"built": end.isoformat(), "total30": total, "cols": cols, "rows": rows})
     log(f"타임라인 재료 {len(rows)}건 (최근 30일 전체 {total}건)")
