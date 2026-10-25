@@ -31,6 +31,11 @@ h1{font:700 clamp(1.5rem,4.5vw,2.1rem)/1.35 "Noto Serif KR",serif;margin:.5rem 0
 h2{font:700 1.1rem/1.4 "Noto Serif KR",serif;margin:2rem 0 .5rem}
 .meta{display:flex;flex-wrap:wrap;gap:.25rem 1rem;color:var(--muted);font-size:.875rem}
 .lede{font-size:1.0625rem;word-break:keep-all}
+.todo{border:1.5px solid var(--ins);border-radius:12px;padding:1rem 1.1rem;margin:1.25rem 0 1.5rem;background:color-mix(in srgb,var(--ins-bg) 55%,var(--paper))}
+.todo h2{margin:.35rem 0 .5rem;font-size:1.05rem}.todo ul{margin:0 0 .6rem;padding-left:1.1rem}.todo li{margin:.2rem 0}
+.todo dl{display:grid;grid-template-columns:5.5rem 1fr;gap:.3rem .75rem;margin:.5rem 0;font-size:.9rem}.todo dt{color:var(--muted)}.todo dd{margin:0}
+.todo-h{display:flex;flex-wrap:wrap;gap:.3rem}.actchip{font-size:.72rem;font-weight:600;color:var(--ins);border:1px solid var(--ins);border-radius:999px;padding:.05rem .5rem}
+.todo .note{font-size:.8rem;color:var(--muted);margin:.4rem 0 0}
 .box{border:1px solid var(--rule);border-radius:12px;padding:1rem 1.1rem;background:color-mix(in srgb,var(--paper) 70%,#fff)}
 ul{padding-left:1.2rem}li{margin:.3rem 0}
 del{color:var(--del);background:var(--del-bg);padding:0 .15em;border-radius:2px}
@@ -211,6 +216,58 @@ def when_box(it, ai, url):
     return f'<section class="whenbox"><h2>언제부터, 누구에게</h2>{body}</section>'
 
 
+# ── 할 일 카드 — 행동 종류(꼬리표)·쉬운 말 전→후·부칙 시기로 "해당된다면 이렇게 확인해 보세요". AI 추가 호출 없음
+ACT_LEAD = [   # (행동 종류, 첫 문장) — 위에 있을수록 먼저
+    ("해야 할 것", "해야 할 일이 생겨요"),
+    ("하면 안 되는 것", "앞으로 하면 안 되는 일이 생겨요"),
+    ("받을 것", "받을 수 있는 것이 생기거나 달라져요"),
+    ("계산이 바뀌는 것", "세금·금액·기간 계산이 달라져요"),
+    ("권리가 바뀌는 것", "누릴 수 있는 권리가 달라져요"),
+]
+ACT_ASK = {"해야 할 것": "언제까지 무엇을 해야 하는지", "하면 안 되는 것": "지금 하는 일 중 걸리는 것이 있는지",
+           "받을 것": "받을 수 있는 대상인지, 신청이 필요한지", "계산이 바뀌는 것": "내 경우 숫자가 어떻게 달라지는지",
+           "권리가 바뀌는 것": "내가 쓸 수 있는 권리인지"}
+
+
+def _links():
+    import re as _re
+    return [(_re.compile(x["match"]), x["label"], x["url"]) for x in config("action_links")["links"]]
+
+
+def todo_card(it, ai):
+    """행동 종류가 실제 할 일일 때만. 판정이 아니라 '해당된다면'"""
+    act = (it.get("tags") or {}).get("act") or []
+    lead = next(((a, s) for a, s in ACT_LEAD if a in act), None)
+    if not lead or ai.get("status") != "ok":
+        return ""
+    w = ai.get("when") or {}
+    start = w.get("start") or (it["effective"] if it["effective"] and it["effective"] != it["announced"] else "")
+    rows = []
+    for c in (ai.get("changes") or [])[:3]:
+        if c.get("after"):
+            rows.append(f'<li><b>{e(c.get("what", ""))}</b> {e(c["after"])}</li>')
+    when = ""
+    if start:
+        dd = (dt.date.fromisoformat(start) - today()).days
+        when = f'{_ymd(start)}부터' + (f' · <b>D-{dd}</b>' if dd > 0 else ' · 이미 시행 중')
+        if w.get("target"):
+            when += f' · {e(w["target"])}'
+    asks = [ACT_ASK[a] for a, _ in ACT_LEAD if a in act][:2]
+    if it["kind"] == "ordin":
+        where = f'{e(it["org"])} 담당 부서 (누리집·민원 전화)'
+    else:
+        text = f'{it["name"]} {it["org"]}'
+        lab, url = next(((l, u) for rx, l, u in _links() if rx.search(text)), ("정부24", "https://www.gov.kr"))
+        where = f'<a href="{e(url)}" target="_blank" rel="noopener">{e(lab)}</a> · 소관: {e(it["org"])}'
+    chips = "".join(f'<span class="actchip">{e(a)}</span>' for a, _ in ACT_LEAD if a in act)
+    return (f'<section class="todo"><div class="todo-h">{chips}</div><h2>해당된다면, {e(lead[1])}</h2>'
+            + (f'<ul>{"".join(rows)}</ul>' if rows else '')
+            + '<dl>' + (f'<dt>언제부터</dt><dd>{when}</dd>' if when else '')
+            + (f'<dt>확인할 것</dt><dd>{e(" · ".join(asks))}</dd>' if asks else '')
+            + f'<dt>어디서</dt><dd>{where}</dd></dl>'
+            + '<p class="note">내 경우에 해당하는지는 아래 원문과 부칙으로 확인하고, 애매하면 담당 기관이나 전문가에게 물어보세요.</p></section>')
+
+
 def checks_html(ai):
     if ai.get("status") != "ok":
         return ""
@@ -293,6 +350,7 @@ def render(it, history, pack_names, reported=False):
 <h1>{e(title)}</h1>
 <ol class="steps" id="steps">{steps_html}</ol>
 <p class="meta"><a href="../guide.html">시행령·부칙·공포·시행이 뭔가요?</a></p>
+{todo_card(it, ai)}
 {what_html}
 {when_html}
 {checks}
