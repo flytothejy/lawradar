@@ -1,0 +1,30 @@
+name: export
+
+# 화면 데이터(timeline.json)만 만들어 아티팩트로 — 배포 없이 평가·확인용 (tests/relevance/eval.js)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: pip install -q -r requirements.txt
+      - run: python -m lcf sync pull --all-days
+      - run: python -m lcf build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: timeline
+          path: data/lcf/site/api/timeline.json
+          retention-days: 3
