@@ -212,6 +212,31 @@ dialog#fbd::backdrop{background:rgba(10,14,22,.45)}
 .ghost{font:inherit;font-weight:600;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:14px;padding:0 1.25rem;min-height:52px;cursor:pointer}
 .toast{position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);display:flex;gap:1rem;align-items:center;background:var(--ink);color:var(--paper);border-radius:12px;padding:.75rem 1rem;font-size:.875rem;width:max-content;max-width:calc(100% - 2rem);box-sizing:border-box;z-index:10}
 .toast button{all:unset;cursor:pointer;font-weight:600;color:var(--paper);text-decoration:underline;white-space:nowrap}
+/* 진행 표시 — 레이더가 도는 동안 지금 하는 일을 단계로 */
+.think{display:flex;flex-direction:column;gap:.9rem;margin-top:1.5rem;padding:1.1rem 1.1rem 1rem;background:var(--card);border:1px solid var(--rule);border-radius:16px}
+.think-top{display:flex;align-items:center;gap:.85rem}
+.radar{position:relative;flex:none;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle,var(--ins-bg) 0 30%,transparent 31%),repeating-radial-gradient(circle,transparent 0 9px,color-mix(in srgb,var(--ins) 22%,transparent) 9px 10px);overflow:hidden;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ins) 35%,transparent)}
+.radar::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 290deg,color-mix(in srgb,var(--ins) 55%,transparent) 360deg);animation:sweep 1.6s linear infinite}
+.radar::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--ins)}
+.radar i{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--ins);opacity:0;animation:blip 1.6s ease-out infinite}
+.radar i:nth-child(1){left:28%;top:24%;animation-delay:.25s}.radar i:nth-child(2){left:68%;top:58%;animation-delay:.9s}.radar i:nth-child(3){left:36%;top:70%;animation-delay:1.3s}
+.radar.sm{width:28px;height:28px}.radar.done::before,.radar.done i{animation:none;opacity:0}
+.radar.fail{box-shadow:inset 0 0 0 1.5px var(--del)}.radar.fail::before,.radar.fail i{display:none}.radar.fail::after{background:var(--del)}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@keyframes blip{0%,40%{opacity:0;transform:scale(.4)}55%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.2)}}
+@media (prefers-reduced-motion:reduce){.radar::before,.radar i{animation:none}.radar::before{opacity:.6}}
+.think-h{display:flex;flex-direction:column;min-width:0}
+.think-h b{font-weight:600;font-size:1rem}
+.think-h span{font-size:.8125rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.think ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.think li{display:grid;grid-template-columns:1.25rem minmax(0,1fr);gap:.55rem;font-size:.9rem;color:var(--muted);align-items:start}
+.think li::before{content:"";width:.7rem;height:.7rem;margin:.35rem auto 0;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--rule)}
+.think li.th-on{color:var(--ink)}.think li.th-on::before{box-shadow:inset 0 0 0 1.5px var(--ins);animation:pulse 1s ease-in-out infinite}
+.think li.th-ok{color:var(--ink)}.think li.th-ok::before{content:"✓";width:auto;height:auto;margin:0 auto;box-shadow:none;color:var(--ins);font-weight:700;font-size:.85rem;line-height:1.55}
+.think li small{display:block;color:var(--ins-deep);font-size:.8125rem;margin-top:.1rem;word-break:keep-all}
+@keyframes pulse{50%{box-shadow:inset 0 0 0 4px var(--ins-bg),inset 0 0 0 1.5px var(--ins)}}
+.think .err{margin:0}
+.think-mini{display:flex;align-items:center;gap:.6rem;margin:.6rem 0 0;font-size:.8125rem;color:var(--muted)}
 footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
 </style>
 </head>
@@ -227,17 +252,18 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
       <label class="lbl" for="sit">어떤 상황이세요?</label>
       <textarea id="sit" maxlength="300" placeholder="예: 화성 제부도에서 펜션을 운영하고 있어요. 손님은 주로 숙박 앱으로 받고, 장 보러 차를 자주 써요."></textarea>
       <p class="hint">사는 곳, 하는 일, 신경 쓰이는 것을 편하게 적어 주세요.</p>
-      <span class="hint" style="display:block;margin-top:1.25rem">이렇게 적어도 돼요</span>
+      <div id="sit-ex"><span class="hint" style="display:block;margin-top:1.25rem">이렇게 적어도 돼요</span>
       <div class="chips" id="chips">
         <button type="button" class="chip">화성 제부도에서 펜션을 운영하고, 손님은 숙박 앱으로 받아요</button>
         <button type="button" class="chip">동탄에서 카페를 해요</button>
         <button type="button" class="chip">아이 키우는 부산 시민이에요</button>
         <button type="button" class="chip">수원에 집 한 채 있고 갈아타기를 고민 중이에요</button>
-      </div>
+      </div></div>
       <p class="err" id="sit-err" hidden></p>
       <div class="resume" id="resume" hidden><span id="resume-t"></span><a href="#/timeline">내 타임라인 →</a></div>
       <div class="grow"></div>
       <button class="cta" id="sit-go" type="submit" style="margin-top:2rem">내 맞춤 피드 만들기</button>
+      <div id="sit-think" aria-live="polite"></div>
       <a class="sub" href="#/profile?manual=1">분야를 직접 고를게요</a>
     </form>
     <div class="other">다른 방법으로 보기 · <a href="#/week">이번 주 전국 변화</a><a href="r/">지역별 조례</a><a href="#/ask">바뀐 것 물어보기</a><a href="guide.html">법은 이렇게 생겼어요</a></div>
@@ -284,7 +310,7 @@ footer{margin-top:2.5rem;font-size:.75rem;line-height:1.6;color:var(--muted)}
     <div class="tl-head"><h1>내 타임라인</h1><a href="#/alerts">알림 받기</a></div>
     <p class="tl-sub"><span id="tl-sub"></span> · <a href="#/profile">조건 바꾸기</a></p>
     <div class="tl-fb" id="tl-fb"></div>
-    <p class="tl-rank" id="tl-rank" hidden>내 상황에 맞는지 한 번 더 고르는 중…</p>
+    <div class="think-mini" id="tl-rank" hidden aria-live="polite"><span class="radar sm"><i></i><i></i><i></i></span><span id="tl-rank-t">내 상황에 맞는지 AI가 한 번 더 고르는 중</span></div>
     <nav class="areas" id="tl-areas" aria-label="분야"></nav>
     <div id="tl-body"></div>
   </section>
@@ -396,6 +422,40 @@ function showMain(){
   if (p) $("#resume-t").textContent = `${p.who || "내 조건"}${p.region ? " · " + p.region : ""}`;
   if (p && p.text && !$("#sit").value) $("#sit").value = p.text;
 }
+// 진행 표시: 단계는 시간에 맞춰 넘어가고(호출은 한 번), 답이 오면 실제 결과를 보여 줌
+function thinking(el, title, steps, at){
+  const t0 = Date.now();
+  el.innerHTML = `<div class="think"><div class="think-top"><span class="radar"><i></i><i></i><i></i></span>
+    <div class="think-h"><b id="th-t">${esc(title)}</b><span id="th-s">0초</span></div></div>
+    <ol>${steps.map((s, i) => `<li data-i="${i}"><span>${esc(s)}</span></li>`).join("")}</ol></div>`;
+  const lis = [...el.querySelectorAll("li")];
+  let cur = -1;
+  const go = i => { cur = i; lis.forEach((li, j) => { li.className = j < i ? "th-ok" : j === i ? "th-on" : ""; }); $("#th-t").textContent = steps[i] + "…"; };
+  go(0);
+  requestAnimationFrame(() => el.scrollIntoView({behavior: "smooth", block: "center"}));
+  const tick = setInterval(() => {
+    const s = (Date.now() - t0) / 1000;
+    $("#th-s").textContent = `${Math.floor(s)}초` + (s > 12 ? " · 조금만 더 기다려 주세요" : "");
+    const want = at.filter(x => s >= x).length - 1;
+    if (want > cur && want < steps.length) go(want);
+  }, 250);
+  return {
+    done(title2, notes){                                    // notes: 단계별 실제 결과 (없으면 생략)
+      clearInterval(tick);
+      lis.forEach((li, j) => { li.className = "th-ok"; if (notes && notes[j]) li.lastElementChild.insertAdjacentHTML("beforeend", `<small>${esc(notes[j])}</small>`); });
+      el.querySelector(".radar").classList.add("done");
+      $("#th-t").textContent = title2; $("#th-s").textContent = `${((Date.now() - t0) / 1000).toFixed(1)}초`;
+    },
+    fail(msg){
+      clearInterval(tick);
+      el.querySelector(".radar").classList.add("fail");
+      lis.forEach((li, j) => { if (j >= cur) li.className = ""; });
+      $("#th-t").textContent = "정리하지 못했어요";
+      el.querySelector(".think").insertAdjacentHTML("beforeend", `<p class="err">${esc(msg)}</p>`);
+    },
+    clear(){ clearInterval(tick); el.innerHTML = ""; }
+  };
+}
 $("#chips").addEventListener("click", e => { if (e.target.matches(".chip")) { $("#sit").value = e.target.textContent; $("#sit").focus(); } });
 $("#sitf").addEventListener("submit", async e => {
   e.preventDefault();
@@ -404,16 +464,24 @@ $("#sitf").addEventListener("submit", async e => {
   if (text.length < 4) { err.textContent = "상황을 한두 문장 적어 주세요."; err.hidden = false; return; }
   await cfg;
   if (!API) { err.textContent = "지금은 자동 정리를 쓸 수 없어요. '분야를 직접 고를게요'로 진행해 주세요."; err.hidden = false; return; }
-  btn.disabled = true; btn.textContent = "상황을 정리하는 중…";
+  btn.disabled = true; btn.hidden = true; $("#sit-ex").hidden = true;
+  const th = thinking($("#sit-think"), "상황을 읽는 중", ["상황 글 읽기", "사는 곳과 하는 일 찾기", "나에게 해당하는 대상·분야 고르기", "지켜볼 법령이 실제로 있는지 확인하기"], [0, 1.2, 3, 5.5]);
   try {
     const r = await fetch(API + "/profile", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({text})});
     const o = await r.json();
     if (!r.ok) throw new Error(o.error || "오류");
-    DRAFT = o.profile;
-    location.hash = "#/profile";
+    const p = o.profile, on = (p.interests || []).filter(x => x.on);
+    th.done("이렇게 이해했어요", [
+      p.who ? `“${p.who}”` : "",
+      [p.region || "사는 곳은 적혀 있지 않아요", p.job].filter(Boolean).join(" · "),
+      [(p.aud || []).slice(0, 4).join(" · "), on.length ? `분야 ${on.length}개` : ""].filter(Boolean).join(" — "),
+      (p.laws || []).length ? `${p.laws.slice(0, 3).join(", ")}${p.laws.length > 3 ? ` 외 ${p.laws.length - 3}개` : ""}` : "우리 기록에서 확인된 법령은 없어요 — 분야와 대상으로 골라요"]);
+    DRAFT = p;
+    setTimeout(() => { th.clear(); btn.hidden = false; btn.disabled = false; $("#sit-ex").hidden = false; location.hash = "#/profile"; }, 1600);
   } catch (x) {
-    err.textContent = x.message || "잠시 후 다시 시도해 주세요."; err.hidden = false;
-  } finally { btn.disabled = false; btn.textContent = "내 맞춤 피드 만들기"; }
+    th.fail(x.message || "잠시 후 다시 시도해 주세요.");
+    btn.hidden = false; btn.disabled = false; $("#sit-ex").hidden = false;
+  }
 });
 
 // ── 2. 이렇게 이해했어요 ───────────────────────────────────
@@ -517,6 +585,8 @@ async function rankMissing(d, p){
     .map(x => x.r.key).slice(0, 40);
   if (!need.length) return;
   RANKING = true; $("#tl-rank").hidden = false;
+  const t0 = Date.now(), base = `변경 ${need.length}건이 내 상황에 맞는지 AI가 하나씩 다시 보는 중`;
+  const tk = setInterval(() => { $("#tl-rank-t").textContent = `${base} · ${Math.floor((Date.now() - t0) / 1000)}초`; }, 500);
   try {
     await cfg; if (!API) return;
     const r = await fetch(API + "/rank", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({text: p.text, region: p.region, keys: need})});
@@ -526,8 +596,9 @@ async function rankMissing(d, p){
     const next = {...LR.rankLoad(p), ...(o.labels || {})};
     (o.missing || []).forEach(k => { if (next[k] === undefined) next[k] = 1; });   // 색인에 없는 것(내용 없음)은 규칙대로 보여 줌
     LR.rankSave(p, next);
-    if (location.hash.startsWith("#/timeline")) route();
-  } catch (e) {} finally { RANKING = false; $("#tl-rank").hidden = true; }
+    const got = Object.values(o.labels || {}), n2 = got.filter(v => v === 2).length, n1 = got.filter(v => v === 1).length;
+    if (location.hash.startsWith("#/timeline")) { route(); toast(`AI가 ${got.length}건을 다시 봤어요 — 꼭 확인 ${n2}건 · 관련 ${n1}건만 남기고 나머지는 접었어요`); }
+  } catch (e) {} finally { clearInterval(tk); RANKING = false; $("#tl-rank").hidden = true; }
 }
 const hrefOf = r => r.page || r.url, extOf = r => r.page ? "" : ' target="_blank" rel="noopener"';
 
@@ -590,6 +661,7 @@ const render = (list, when, opt) => chains(list).map(g => g.items.length > 1 ? c
 async function upgradeProfile(p){
   if (!p || p.v >= 2 || !p.text || p.upTried) return p;
   p.upTried = 1; LR.save(p);
+  $("#tl-body").innerHTML = `<div class="think-mini"><span class="radar sm"><i></i><i></i><i></i></span><span>조건을 새 방식으로 한 번 다듬는 중이에요 (처음 한 번만)</span></div>`;
   try {
     await cfg; if (!API) return p;
     const r = await fetch(API + "/profile", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({text: p.text})});
