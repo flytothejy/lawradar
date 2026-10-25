@@ -143,6 +143,7 @@ ol.list{list-style:none;margin:0;padding:0}
 .b-adm{color:var(--ink2);background:var(--gray-bg)}
 .b-loc{color:var(--loc);background:var(--loc-bg)}
 .b-must{color:var(--del);background:var(--del-bg)}
+.b-act{color:var(--ins);box-shadow:inset 0 0 0 1px var(--ins);background:transparent}
 .bdgs1{display:inline-flex;flex-wrap:wrap;gap:.3rem}
 .tl-rank{font-size:.8125rem;color:var(--muted);margin:.4rem 0 0}
 .ev{display:grid;grid-template-columns:3.25rem minmax(0,1fr);gap:.75rem;padding:.9rem 0;border-bottom:1px solid var(--rule)}
@@ -500,7 +501,9 @@ function alertMsg(t){ const b = $("#pf-go"); const o = b.textContent; b.textCont
 let TL_LIMIT = 30, TL_AREA = "";
 const STAR = `<svg width="15" height="15" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8l2.2 4.5 5 .7-3.6 3.5.9 4.9L10 14l-4.5 2.4.9-4.9-3.6-3.5 5-.7z"/></svg>`;
 const STEP = r => r.kind === "admrul" ? "고시" : r.kind === "ordin" ? r.type : r.type === "법률" ? "법률" : r.type === "대통령령" ? "시행령" : "시행규칙";
-const badge = r => { const k = LR.kind(r); return `<span class="bdgs1">${r.m && r.m.tier === 2 ? `<span class="bdg b-must">꼭 확인</span>` : ""}<span class="bdg ${k.c}">${esc(k.t)}${r.change === "제정" ? " · 새로 생김" : ""}</span></span>`; };
+const ACT_SHOW = ["해야 할 것", "하면 안 되는 것", "받을 것", "계산이 바뀌는 것"];   // 할 일 카드와 같은 순서
+const actChip = r => { const a = ACT_SHOW.find(x => (r.act || "").split("|").includes(x)); return a ? `<span class="bdg b-act">${esc(a)}</span>` : ""; };
+const badge = r => { const k = LR.kind(r); return `<span class="bdgs1">${r.m && r.m.tier === 2 ? `<span class="bdg b-must">꼭 확인</span>` : ""}<span class="bdg ${k.c}">${esc(k.t)}${r.change === "제정" ? " · 새로 생김" : ""}</span>${actChip(r)}</span>`; };
 
 // AI 재판정: 후보 중 아직 판정 안 된 것을 Worker에 보내고, 오면 다시 그림 (조건마다 처음 한 번 + 새 항목만)
 let RANKING = false;
