@@ -71,6 +71,10 @@ jobs:
       - name: notify
         if: success() && (github.event_name == 'schedule' || inputs.notify)
         run: python -m lcf notify
+      - name: 하루 사용·비용 요약 (어제)
+        if: always() && github.event_name == 'schedule'
+        continue-on-error: true
+        run: python -m lcf usage
       - name: 미뤄 둔 백필 이어하기
         if: always()
         env:
